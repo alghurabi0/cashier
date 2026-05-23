@@ -1,0 +1,78 @@
+# Docker Compose for Coffeeshop Development
+# Starts: PostgreSQL + API + Web Menu
+# Note: POS (Wails desktop app) runs natively on the host — see README.md
+
+services:
+  # ─── PostgreSQL Database ───────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: coffeeshop-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: coffeeshop
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: coffeeshop
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coffeeshop"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ─── Database Migrations ───────────────────────────────────────────
+  migrate:
+    image: migrate/migrate:v4.17.0
+    container_name: coffeeshop-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./coffeeshop-api/migrations:/migrations
+    command: >
+      -path=/migrations
+      -database=postgres://coffeeshop:password@postgres:5432/coffeeshop?sslmode=disable
+      up
+    # Runs once and exits
+
+  # ─── Coffeeshop API ────────────────────────────────────────────────
+  api:
+    build:
+      context: ./coffeeshop-api
+      dockerfile: Dockerfile
+    container_name: coffeeshop-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://coffeeshop:password@postgres:5432/coffeeshop?sslmode=disable
+      JWT_SECRET: dev-secret-change-me
+      ENVIRONMENT: development
+    ports:
+      - "8080:8080"
+
+  # ─── Web Menu (Vite Dev Server) ────────────────────────────────────
+  menu:
+    build:
+      context: ./coffeeshop-menu
+      dockerfile: Dockerfile.dev
+    container_name: coffeeshop-menu
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      VITE_API_URL: http://localhost:8080
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./coffeeshop-menu:/app          # Mount source for hot reload
+      - /app/node_modules               # Keep container's node_modules
+
+volumes:
+  pgdata:

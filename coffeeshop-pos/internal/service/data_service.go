@@ -1,0 +1,86 @@
+package service
+
+import (
+	"coffeeshop-pos/internal/model"
+	"fmt"
+
+	"github.com/jmoiron/sqlx"
+)
+
+// DataService is a Wails-bound service that exposes local SQLite data
+// to the frontend. All methods are exported and callable from JavaScript.
+type DataService struct {
+	db *sqlx.DB
+}
+
+// NewDataService creates a new DataService.
+func NewDataService(db *sqlx.DB) *DataService {
+	return &DataService{db: db}
+}
+
+// GetCategories returns all active categories from local SQLite.
+func (s *DataService) GetCategories() ([]model.Category, error) {
+	var categories []model.Category
+	err := s.db.Select(&categories,
+		`SELECT id, name_ar, sort_order, is_active
+		 FROM categories WHERE is_active = 1
+		 ORDER BY sort_order ASC, name_ar ASC`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch categories: %w", err)
+	}
+	return categories, nil
+}
+
+// GetMenuItems returns active menu items from local SQLite.
+// If categoryID is non-empty, filters by category.
+func (s *DataService) GetMenuItems(categoryID string) ([]model.MenuItemWithCategory, error) {
+	var items []model.MenuItemWithCategory
+
+	if categoryID != "" {
+		err := s.db.Select(&items,
+			`SELECT mi.id, mi.category_id, mi.name_ar, mi.price,
+			        mi.cost_calc_method, mi.manual_cost_price, mi.cached_auto_cost,
+			        mi.image_path, mi.is_active,
+			        c.name_ar AS category_name_ar
+			 FROM menu_items mi
+			 JOIN categories c ON c.id = mi.category_id
+			 WHERE mi.is_active = 1 AND mi.category_id = ?
+			 ORDER BY mi.name_ar ASC`,
+			categoryID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch menu items: %w", err)
+		}
+		return items, nil
+	}
+
+	err := s.db.Select(&items,
+		`SELECT mi.id, mi.category_id, mi.name_ar, mi.price,
+		        mi.cost_calc_method, mi.manual_cost_price, mi.cached_auto_cost,
+		        mi.image_path, mi.is_active,
+		        c.name_ar AS category_name_ar
+		 FROM menu_items mi
+		 JOIN categories c ON c.id = mi.category_id
+		 WHERE mi.is_active = 1
+		 ORDER BY mi.name_ar ASC`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch menu items: %w", err)
+	}
+	return items, nil
+}
+
+// GetInventoryItems returns all active inventory items from local SQLite.
+func (s *DataService) GetInventoryItems() ([]model.InventoryItem, error) {
+	var items []model.InventoryItem
+	err := s.db.Select(&items,
+		`SELECT id, name_ar, base_unit_ar, stock_qty, low_stock_threshold, unit_cost, is_active
+		 FROM inventory_items WHERE is_active = 1
+		 ORDER BY name_ar ASC`,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch inventory items: %w", err)
+	}
+	return items, nil
+}

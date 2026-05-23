@@ -1,0 +1,257 @@
+/* ══════════════════════════════════════════════════
+   Coffeeshop POS — Design System
+   RTL-first, Arabic typography, warm coffeeshop palette
+   ══════════════════════════════════════════════════ */
+
+/* ── Google Font Import ── */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
+
+/* ── Design Tokens ── */
+:root {
+  /* Colors — warm coffeeshop palette */
+  --color-bg:           #0f0f1a;
+  --color-surface:      #1a1a2e;
+  --color-surface-2:    #16213e;
+  --color-surface-3:    #0f3460;
+  --color-accent:       #e94560;
+  --color-accent-hover: #d63851;
+  --color-accent-glow:  rgba(233, 69, 96, 0.3);
+  --color-text:         #f0f0f5;
+  --color-text-muted:   #7a7a8e;
+  --color-text-dim:     #4a4a5e;
+  --color-success:      #27ae60;
+  --color-success-glow: rgba(39, 174, 96, 0.25);
+  --color-warning:      #f39c12;
+  --color-danger:       #e74c3c;
+  --color-border:       rgba(255,255,255,0.06);
+  --color-border-light: rgba(255,255,255,0.1);
+  --color-cart-bg:      #141425;
+
+  /* Typography */
+  --font-family: 'Cairo', 'Noto Sans Arabic', system-ui, sans-serif;
+  --font-size-xs:  0.75rem;
+  --font-size-sm:  0.85rem;
+  --font-size-md:  1rem;
+  --font-size-lg:  1.15rem;
+  --font-size-xl:  1.35rem;
+  --font-size-2xl: 1.75rem;
+  --font-size-3xl: 2.25rem;
+  --font-weight-normal: 400;
+  --font-weight-semi:   600;
+  --font-weight-bold:   700;
+  --font-weight-extra:  800;
+
+  /* Spacing */
+  --gap-xs:  4px;
+  --gap-sm:  8px;
+  --gap-md:  16px;
+  --gap-lg:  24px;
+  --gap-xl:  32px;
+
+  /* Border radius */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm:   0 2px 8px rgba(0,0,0,0.2);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.4);
+  --shadow-glow: 0 0 20px var(--color-accent-glow);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+}
+
+/* ── Global Reset ── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── RTL & Base ── */
+html {
+  direction: rtl;
+  font-family: var(--font-family);
+  font-size: 16px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#app {
+  height: 100%;
+}
+
+/* ── Scrollbar (thin, dark) ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-dim);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ── Utility Classes ── */
+.text-muted { color: var(--color-text-muted); }
+.text-success { color: var(--color-success); }
+.text-warning { color: var(--color-warning); }
+.text-danger { color: var(--color-danger); }
+.text-accent { color: var(--color-accent); }
+.text-sm { font-size: var(--font-size-sm); }
+.text-lg { font-size: var(--font-size-lg); }
+.text-xl { font-size: var(--font-size-xl); }
+.font-bold { font-weight: var(--font-weight-bold); }
+
+/* ── Button Base ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-sm);
+  padding: var(--gap-sm) var(--gap-md);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semi);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-hover);
+  box-shadow: var(--shadow-glow);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border-light);
+}
+
+.btn-ghost:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-lg);
+}
+
+.btn-lg {
+  padding: var(--gap-md) var(--gap-lg);
+  font-size: var(--font-size-lg);
+  border-radius: var(--radius-lg);
+}
+
+/* ── Badge ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 var(--gap-xs);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  background: var(--color-accent);
+  color: white;
+}
+
+/* ── Modal Overlay ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn var(--transition-fast);
+}
+
+.modal-content {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--gap-xl);
+  min-width: 400px;
+  max-width: 90vw;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp var(--transition-base);
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: var(--gap-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-success);
+  color: white;
+  padding: var(--gap-md) var(--gap-lg);
+  border-radius: var(--radius-lg);
+  font-weight: var(--font-weight-semi);
+  box-shadow: var(--shadow-md);
+  z-index: 2000;
+  animation: slideUpFade var(--transition-base);
+}
+
+/* ── Animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.5; }
+}
