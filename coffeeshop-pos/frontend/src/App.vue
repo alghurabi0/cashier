@@ -6,6 +6,7 @@ import SetupScreen from './views/SetupScreen.vue'
 import LoginScreen from './views/LoginScreen.vue'
 import PosView from './views/PosView.vue'
 import WebOrdersView from './views/WebOrdersView.vue'
+import KitchenView from './views/KitchenView.vue'
 import OrderHistoryView from './views/OrderHistoryView.vue'
 import ReportsView from './views/ReportsView.vue'
 import InventoryView from './views/InventoryView.vue'
@@ -16,6 +17,23 @@ import { useWebOrders } from './composables/useWebOrders'
 
 const activeView = ref('pos')
 const lastSyncTime = ref('')
+let DataService: any = null
+let syncTimePoll: ReturnType<typeof setInterval> | null = null
+
+async function pollSyncTime() {
+  if (!DataService) {
+    try {
+      DataService = await import('../bindings/coffeeshop-pos/internal/service/dataservice')
+    } catch { return }
+  }
+  try {
+    const raw = await DataService.GetLastSyncTime()
+    if (raw) {
+      const d = new Date(raw)
+      lastSyncTime.value = d.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
+    }
+  } catch { /* ignore */ }
+}
 
 const { currentUser, initBindings: initAuth, checkExistingSession, logout } = useAuth()
 const { isSetup, initBindings: initConfig, checkSetup } = useConfigStore()
@@ -43,8 +61,12 @@ onMounted(async () => {
   await checkExistingSession()
   if (currentUser.value) {
     appState.value = 'ready'
+    activeView.value = currentUser.value.role === 'kitchen' ? 'kitchen' : 'pos'
     await initWebOrders()
     startPolling(2000)
+    // Start sync time polling
+    await pollSyncTime()
+    syncTimePoll = setInterval(pollSyncTime, 30000)
   } else {
     appState.value = 'login'
   }
@@ -62,13 +84,17 @@ import { watch } from 'vue'
 watch(isLoggedIn, async (loggedIn) => {
   if (loggedIn && appState.value === 'login') {
     appState.value = 'ready'
+    activeView.value = currentUser.value?.role === 'kitchen' ? 'kitchen' : 'pos'
     await initWebOrders()
     startPolling(2000)
+    await pollSyncTime()
+    syncTimePoll = setInterval(pollSyncTime, 30000)
   }
 })
 
 async function onLogout() {
   stopPolling()
+  if (syncTimePoll) { clearInterval(syncTimePoll); syncTimePoll = null }
   await logout()
   activeView.value = 'pos'
   appState.value = 'login'
@@ -103,6 +129,7 @@ async function onLogout() {
       <div class="app-main">
         <PosView v-if="activeView === 'pos'" />
         <WebOrdersView v-else-if="activeView === 'web-orders'" />
+        <KitchenView v-else-if="activeView === 'kitchen'" />
         <OrderHistoryView v-else-if="activeView === 'order-history'" />
         <ReportsView v-else-if="activeView === 'reports'" />
         <InventoryView v-else-if="activeView === 'inventory'" />

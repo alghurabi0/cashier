@@ -54,6 +54,11 @@ services:
       DATABASE_URL: postgres://coffeeshop:password@postgres:5432/coffeeshop?sslmode=disable
       JWT_SECRET: dev-secret-change-me
       ENVIRONMENT: development
+      R2_ACCOUNT_ID: "3d229b6e907e0c45e10592aa6f50d488"
+      R2_ACCESS_KEY_ID: "9cd056cd22f55518e0acda40476482c3"
+      R2_SECRET_ACCESS_KEY: "b1334703e589dd323b482cc0edd10c906c64c3eaea9aafffbc801a12683dd749"
+      R2_BUCKET_NAME: "cashier"
+      R2_PUBLIC_URL: "https://pub-005956126efc4c20ad85fc718759c13e.r2.dev"
     ports:
       - "8080:8080"
 

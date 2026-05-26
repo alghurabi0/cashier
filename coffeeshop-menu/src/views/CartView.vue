@@ -11,7 +11,7 @@ const emit = defineEmits<{
   submitted: []
 }>()
 
-const { items, total, isSubmitting, orderError, incrementQty, decrementQty, removeItem, submitOrder } = useCart()
+const { items, total, isSubmitting, orderError, incrementQty, decrementQty, submitOrder } = useCart()
 
 async function onSubmit(token: string) {
   await submitOrder(token)

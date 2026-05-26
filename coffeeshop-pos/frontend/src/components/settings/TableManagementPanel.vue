@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 
-let ManagementService: any = null
 
 interface Table {
   id: string
@@ -15,17 +14,26 @@ const newNumber = ref('')
 const isLoading = ref(false)
 const formError = ref('')
 const copiedId = ref<string | null>(null)
+const qrData = ref<string | null>(null)
+const qrTableNumber = ref('')
 
-const menuBaseURL = computed(() => {
-  // In dev, the menu runs at localhost:5173
-  return 'http://localhost:5173'
-})
+const menuBaseURL = ref('http://localhost:5173')
+
+let ManagementService: any = null
+let ConfigStoreService: any = null
 
 async function initBindings() {
   try {
     ManagementService = await import('../../../bindings/coffeeshop-pos/internal/service/managementservice')
   } catch {
     console.warn('ManagementService bindings not available')
+  }
+  try {
+    ConfigStoreService = await import('../../../bindings/coffeeshop-pos/internal/service/configstoreservice')
+    const savedURL = await ConfigStoreService.Get('menu_base_url')
+    if (savedURL) menuBaseURL.value = savedURL
+  } catch {
+    console.warn('ConfigStoreService bindings not available')
   }
 }
 
@@ -74,6 +82,24 @@ function copyLink(table: Table) {
   setTimeout(() => { copiedId.value = null }, 2000)
 }
 
+async function showQR(table: Table) {
+  if (!ManagementService) return
+  try {
+    qrTableNumber.value = table.number
+    qrData.value = await ManagementService.GetTableQRCode(table.token, menuBaseURL.value)
+  } catch (err) {
+    console.error('Failed to generate QR code:', err)
+  }
+}
+
+function downloadQR() {
+  if (!qrData.value) return
+  const link = document.createElement('a')
+  link.href = qrData.value
+  link.download = `table-${qrTableNumber.value}-qr.png`
+  link.click()
+}
+
 onMounted(async () => {
   await initBindings()
   await loadTables()
@@ -115,6 +141,7 @@ onMounted(async () => {
         </div>
 
         <div class="table-actions">
+          <button class="btn-icon" title="رمز QR" @click="showQR(table)">📱</button>
           <button class="btn-icon" :title="copiedId === table.id ? 'تم النسخ!' : 'نسخ رابط القائمة'" @click="copyLink(table)">
             {{ copiedId === table.id ? '✅' : '📋' }}
           </button>
@@ -123,9 +150,16 @@ onMounted(async () => {
       </div>
     </div>
 
-    <p class="hint">
-      💡 انسخ رابط القائمة وحوّله إلى QR code ليستخدمه الزبائن لتصفح القائمة من طاولتهم.
-    </p>
+    <!-- QR Code Modal -->
+    <div v-if="qrData" class="qr-modal-overlay" @click.self="qrData = null">
+      <div class="qr-modal">
+        <button class="qr-close" @click="qrData = null">✕</button>
+        <h3 class="qr-title">🪑 طاولة {{ qrTableNumber }}</h3>
+        <img :src="qrData" alt="QR Code" class="qr-image" />
+        <p class="qr-hint text-muted text-sm">امسح الرمز لفتح القائمة الإلكترونية</p>
+        <button class="btn btn-primary" @click="downloadQR">📥 تحميل</button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -276,5 +310,54 @@ onMounted(async () => {
   text-align: center;
   color: var(--color-text-dim);
   font-size: var(--font-size-sm);
+}
+
+/* QR Modal */
+.qr-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.qr-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl, 16px);
+  padding: var(--gap-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap-md);
+  position: relative;
+  min-width: 300px;
+}
+
+.qr-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.qr-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.qr-image {
+  width: 256px;
+  height: 256px;
+  border-radius: var(--radius-md);
+}
+
+.qr-hint {
+  text-align: center;
 }
 </style>

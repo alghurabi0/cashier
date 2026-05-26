@@ -33,6 +33,14 @@ export function CompleteOrder(orderID: string): $CancellablePromise<void> {
 }
 
 /**
+ * FetchPendingFromAPI pulls pending, accepted, and completed web orders for today from the central API.
+ * This is used on startup/refresh to populate the in-memory queue.
+ */
+export function FetchPendingFromAPI(): $CancellablePromise<void> {
+    return $Call.ByID(2662695310);
+}
+
+/**
  * GetAcceptedOrders returns accepted (in-progress) web orders.
  */
 export function GetAcceptedOrders(): $CancellablePromise<model$0.OrderWithItems[]> {

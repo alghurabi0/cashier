@@ -16,15 +16,34 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as model$0 from "../model/models.js";
 
 /**
+ * CompleteCashierOrder marks a cashier order as completed (called from kitchen).
+ */
+export function CompleteCashierOrder(orderID: string): $CancellablePromise<model$0.OrderWithItems | null> {
+    return $Call.ByID(240343999, orderID).then(($result: any) => {
+        return $$createType1($result);
+    });
+}
+
+/**
  * CreateOrder is called from the frontend when the cashier confirms checkout.
  * 1. Generates UUID + local daily order number
- * 2. Inserts order + order_items into SQLite
+ * 2. Inserts order + order_items into SQLite with status 'accepted' (kitchen will complete)
  * 3. Runs the recipe engine to deduct local inventory
  * 4. Returns the created order
  */
-export function CreateOrder(items: model$0.CartItem[], paymentMethod: string): $CancellablePromise<model$0.OrderWithItems | null> {
-    return $Call.ByID(2109256473, items, paymentMethod).then(($result: any) => {
+export function CreateOrder(items: model$0.CartItem[], paymentMethod: string, tableNumber: string): $CancellablePromise<model$0.OrderWithItems | null> {
+    return $Call.ByID(2109256473, items, paymentMethod, tableNumber).then(($result: any) => {
         return $$createType1($result);
+    });
+}
+
+/**
+ * GetAcceptedOrders returns all orders with status 'accepted' from today (both cashier and web sources).
+ * Used by the Kitchen Display to show orders waiting to be prepared.
+ */
+export function GetAcceptedOrders(): $CancellablePromise<model$0.OrderWithItems[]> {
+    return $Call.ByID(3227628125).then(($result: any) => {
+        return $$createType2($result);
     });
 }
 

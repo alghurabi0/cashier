@@ -8,17 +8,21 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  save: [data: { category_id: string; name_ar: string; price: number; cost_calc_method: string; manual_cost_price: number }]
+  save: [data: { category_id: string; name_ar: string; price: number; cost_calc_method: string; manual_cost_price: number; image_path: string }]
   cancel: []
 }>()
 
 const { categories } = useManagement()
+
+let ManagementService: any = null
 
 const categoryId = ref('')
 const nameAr = ref('')
 const price = ref(0)
 const costCalcMethod = ref('auto')
 const manualCostPrice = ref(0)
+const imagePath = ref('')
+const isUploadingImage = ref(false)
 
 const showManualCost = computed(() => costCalcMethod.value === 'manual')
 
@@ -29,14 +33,55 @@ watch(() => props.editing, (item) => {
     price.value = item.price
     costCalcMethod.value = item.cost_calc_method
     manualCostPrice.value = item.manual_cost_price
+    imagePath.value = item.image_path || ''
   } else {
     categoryId.value = categories.value.length > 0 ? categories.value[0].id : ''
     nameAr.value = ''
     price.value = 0
     costCalcMethod.value = 'auto'
     manualCostPrice.value = 0
+    imagePath.value = ''
   }
 }, { immediate: true })
+
+async function initBindings() {
+  try {
+    ManagementService = await import('../../../bindings/coffeeshop-pos/internal/service/managementservice')
+  } catch { /* not available */ }
+}
+initBindings()
+
+async function onPickImage() {
+  // Use a hidden file input to pick the image
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'image/jpeg,image/png,image/webp'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file || !ManagementService) return
+
+    isUploadingImage.value = true
+    try {
+      // For Wails, we need to pass the file path — use a temporary URL for preview
+      // Since browser file input doesn't give us a real path, we'll upload directly
+      // For now, store as data URL preview and set path empty until R2 is configured
+      const reader = new FileReader()
+      reader.onload = () => {
+        imagePath.value = reader.result as string
+      }
+      reader.readAsDataURL(file)
+    } catch (err) {
+      console.error('Image upload failed:', err)
+    } finally {
+      isUploadingImage.value = false
+    }
+  }
+  input.click()
+}
+
+function removeImage() {
+  imagePath.value = ''
+}
 
 function onSubmit() {
   if (!nameAr.value.trim() || !categoryId.value || price.value <= 0) return
@@ -46,6 +91,7 @@ function onSubmit() {
     price: price.value,
     cost_calc_method: costCalcMethod.value,
     manual_cost_price: showManualCost.value ? manualCostPrice.value : 0,
+    image_path: imagePath.value,
   })
 }
 </script>
@@ -89,6 +135,35 @@ function onSubmit() {
             step="100"
             style="width: 180px"
           />
+        </div>
+
+        <!-- Image Upload -->
+        <div class="form-group">
+          <label class="form-label">صورة المنتج (اختياري)</label>
+          <div class="image-upload-area">
+            <div v-if="imagePath" class="image-preview">
+              <img :src="imagePath" alt="معاينة" class="preview-img" />
+              <button type="button" class="remove-image-btn" @click="removeImage" title="إزالة الصورة">✕</button>
+            </div>
+            <button
+              v-else
+              type="button"
+              class="upload-btn"
+              :disabled="isUploadingImage"
+              @click="onPickImage"
+            >
+              <span v-if="isUploadingImage">⏳ جاري الرفع...</span>
+              <span v-else>📷 اختر صورة</span>
+            </button>
+            <button
+              v-if="imagePath"
+              type="button"
+              class="btn btn-ghost btn-sm"
+              @click="onPickImage"
+            >
+              تغيير الصورة
+            </button>
+          </div>
         </div>
 
         <div class="form-group">
@@ -174,5 +249,66 @@ select.form-input {
   gap: var(--gap-md);
   justify-content: flex-end;
   margin-top: var(--gap-sm);
+}
+
+/* Image upload styles */
+.image-upload-area {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+}
+
+.image-preview {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 2px solid var(--color-border-light);
+}
+
+.preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-btn {
+  padding: var(--gap-md) var(--gap-lg);
+  border: 2px dashed var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.upload-btn:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { MenuItem } from '../types'
 import { formatPrice } from '../types'
 
@@ -17,7 +16,10 @@ function onAdd() {
 </script>
 
 <template>
-  <button class="menu-card" @click="onAdd">
+  <button class="menu-card" :class="{ 'has-image': item.image_path }" @click="onAdd">
+    <div v-if="item.image_path" class="card-image">
+      <img :src="item.image_path" :alt="item.name_ar" loading="lazy" />
+    </div>
     <div class="card-body">
       <h3 class="card-name">{{ item.name_ar }}</h3>
       <span class="card-price">{{ formatPrice(item.price) }} <small>د.ع</small></span>
@@ -33,9 +35,8 @@ function onAdd() {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: var(--gap-lg);
+  padding: 0;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -43,6 +44,11 @@ function onAdd() {
   font-family: var(--font-family);
   color: var(--color-text);
   width: 100%;
+  overflow: hidden;
+}
+
+.menu-card:not(.has-image) {
+  padding: var(--gap-lg);
 }
 
 .menu-card:active {
@@ -54,10 +60,29 @@ function onAdd() {
   background: var(--color-surface-2);
 }
 
+.card-image {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .card-body {
   display: flex;
   flex-direction: column;
   gap: var(--gap-xs);
+  flex: 1;
+  padding: var(--gap-md) var(--gap-lg);
+}
+
+.has-image .card-body {
+  padding-right: var(--gap-md);
 }
 
 .card-name {
@@ -79,6 +104,7 @@ function onAdd() {
 
 .card-action {
   flex-shrink: 0;
+  padding: var(--gap-md);
 }
 
 .add-icon {

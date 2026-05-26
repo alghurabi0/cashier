@@ -48,8 +48,8 @@ export function CreateInventoryItem(nameAr: string, baseUnitAr: string, stockQty
 /**
  * CreateMenuItem creates a new menu item via the API.
  */
-export function CreateMenuItem(categoryID: string, nameAr: string, price: number, costCalcMethod: string, manualCostPrice: number): $CancellablePromise<model$0.MenuItemWithCategory | null> {
-    return $Call.ByID(2560109324, categoryID, nameAr, price, costCalcMethod, manualCostPrice).then(($result: any) => {
+export function CreateMenuItem(categoryID: string, nameAr: string, price: number, costCalcMethod: string, manualCostPrice: number, imagePath: string): $CancellablePromise<model$0.MenuItemWithCategory | null> {
+    return $Call.ByID(2560109324, categoryID, nameAr, price, costCalcMethod, manualCostPrice, imagePath).then(($result: any) => {
         return $$createType5($result);
     });
 }
@@ -101,6 +101,13 @@ export function GetRecipe(menuItemID: string): $CancellablePromise<model$0.Recip
 }
 
 /**
+ * GetTableQRCode generates a QR code PNG image as a base64 data URL for a table's menu link.
+ */
+export function GetTableQRCode(tableToken: string, menuBaseURL: string): $CancellablePromise<string> {
+    return $Call.ByID(233827386, tableToken, menuBaseURL);
+}
+
+/**
  * ListTables fetches all restaurant tables from the API.
  */
 export function ListTables(): $CancellablePromise<model$0.Table[]> {
@@ -144,10 +151,17 @@ export function UpdateInventoryItem(id: string, nameAr: string, baseUnitAr: stri
 /**
  * UpdateMenuItem updates a menu item via the API.
  */
-export function UpdateMenuItem(id: string, categoryID: string, nameAr: string, price: number, costCalcMethod: string, manualCostPrice: number): $CancellablePromise<model$0.MenuItemWithCategory | null> {
-    return $Call.ByID(3825037861, id, categoryID, nameAr, price, costCalcMethod, manualCostPrice).then(($result: any) => {
+export function UpdateMenuItem(id: string, categoryID: string, nameAr: string, price: number, costCalcMethod: string, manualCostPrice: number, imagePath: string): $CancellablePromise<model$0.MenuItemWithCategory | null> {
+    return $Call.ByID(3825037861, id, categoryID, nameAr, price, costCalcMethod, manualCostPrice, imagePath).then(($result: any) => {
         return $$createType5($result);
     });
+}
+
+/**
+ * UploadMenuItemImage opens the API upload endpoint with a file path from the frontend.
+ */
+export function UploadMenuItemImage(filePath: string): $CancellablePromise<string> {
+    return $Call.ByID(1127396906, filePath);
 }
 
 // Private type creation functions

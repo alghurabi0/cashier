@@ -34,6 +34,13 @@ export function GetInventoryItems(): $CancellablePromise<model$0.InventoryItem[]
 }
 
 /**
+ * GetLastSyncTime returns the last successful sync timestamp from sync_meta.
+ */
+export function GetLastSyncTime(): $CancellablePromise<string> {
+    return $Call.ByID(468008867);
+}
+
+/**
  * GetMenuItems returns active menu items from local SQLite.
  * If categoryID is non-empty, filters by category.
  */

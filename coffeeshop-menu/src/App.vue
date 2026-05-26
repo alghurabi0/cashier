@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import MenuView from './views/MenuView.vue'
 import CartView from './views/CartView.vue'
 import ConfirmationView from './views/ConfirmationView.vue'

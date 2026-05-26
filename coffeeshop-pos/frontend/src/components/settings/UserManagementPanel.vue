@@ -88,7 +88,9 @@ onMounted(async () => {
         <input v-model="newPin" type="password" placeholder="رمز PIN" class="form-input" style="width: 100px" />
         <select v-model="newRole" class="form-input">
           <option value="cashier">كاشير</option>
+          <option value="kitchen">مطبخ</option>
           <option value="admin">مدير</option>
+          <option value="dev">مطور</option>
         </select>
         <button class="btn btn-primary btn-sm" @click="createUser">حفظ</button>
       </div>
@@ -100,7 +102,7 @@ onMounted(async () => {
       <div v-for="user in users" :key="user.id" class="user-row">
         <span class="user-name">{{ user.name_ar }}</span>
         <span class="user-role-badge" :class="user.role">
-          {{ user.role === 'admin' ? 'مدير' : 'كاشير' }}
+          {{ user.role === 'admin' ? 'مدير' : user.role === 'kitchen' ? 'مطبخ' : user.role === 'dev' ? 'مطور' : 'كاشير' }}
         </span>
 
         <div class="user-actions">

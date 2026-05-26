@@ -70,7 +70,7 @@ func main() {
 	webOrderService := service.NewWebOrderService(db, apiClient)
 
 	// SSE client for real-time web order notifications
-	sseClient := posSync.NewSSEClient(cfg.APIBaseURL, func(event posSync.SSEEvent) {
+	sseClient := posSync.NewSSEClient(apiClient, func(event posSync.SSEEvent) {
 		webOrderService.HandleSSEEvent(event)
 	})
 

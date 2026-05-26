@@ -4,7 +4,7 @@ import { computed } from 'vue'
 const props = defineProps<{
   active: string
   pendingWebOrders: number
-  userRole: string  // 'admin' or 'cashier'
+  userRole: string  // 'admin', 'cashier', or 'kitchen'
   userName: string
 }>()
 
@@ -14,16 +14,17 @@ const emit = defineEmits<{
 }>()
 
 const allNavItems = [
-  { id: 'pos', icon: '📋', label: 'نقطة البيع', adminOnly: false },
-  { id: 'web-orders', icon: '🌐', label: 'طلبات الويب', adminOnly: false },
-  { id: 'order-history', icon: '📜', label: 'سجل الطلبات', adminOnly: true },
-  { id: 'reports', icon: '📊', label: 'التقارير', adminOnly: true },
-  { id: 'inventory', icon: '📦', label: 'المخزون', adminOnly: true },
-  { id: 'settings', icon: '⚙️', label: 'الإعدادات', adminOnly: true },
+  { id: 'pos', icon: '📋', label: 'نقطة البيع', roles: ['admin', 'cashier', 'dev'] },
+  { id: 'web-orders', icon: '🌐', label: 'طلبات الويب', roles: ['admin', 'cashier', 'dev'] },
+  { id: 'kitchen', icon: '🍳', label: 'المطبخ', roles: ['admin', 'cashier', 'kitchen', 'dev'] },
+  { id: 'order-history', icon: '📜', label: 'سجل الطلبات', roles: ['admin', 'dev'] },
+  { id: 'reports', icon: '📊', label: 'التقارير', roles: ['admin', 'dev'] },
+  { id: 'inventory', icon: '📦', label: 'المخزون', roles: ['admin', 'dev'] },
+  { id: 'settings', icon: '⚙️', label: 'الإعدادات', roles: ['admin', 'dev'] },
 ]
 
 const navItems = computed(() =>
-  allNavItems.filter(item => !item.adminOnly || props.userRole === 'admin')
+  allNavItems.filter(item => item.roles.includes(props.userRole))
 )
 </script>
 
@@ -55,7 +56,7 @@ const navItems = computed(() =>
     <div class="nav-footer" style="--wails-draggable: no-drag">
       <div class="user-info">
         <span class="user-name">{{ userName }}</span>
-        <span class="user-role">{{ userRole === 'admin' ? 'مدير' : 'كاشير' }}</span>
+        <span class="user-role">{{ userRole === 'admin' ? 'مدير' : userRole === 'kitchen' ? 'مطبخ' : userRole === 'dev' ? 'مطور' : 'كاشير' }}</span>
       </div>
       <button class="nav-item logout-btn" title="تسجيل خروج" @click="emit('logout')">
         <span class="nav-icon">🔒</span>

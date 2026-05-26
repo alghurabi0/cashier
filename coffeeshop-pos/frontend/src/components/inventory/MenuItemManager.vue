@@ -34,12 +34,12 @@ function openEdit(item: MenuItem) {
   showForm.value = true
 }
 
-async function onSave(data: { category_id: string; name_ar: string; price: number; cost_calc_method: string; manual_cost_price: number }) {
+async function onSave(data: { category_id: string; name_ar: string; price: number; cost_calc_method: string; manual_cost_price: number; image_path: string }) {
   try {
     if (editingItem.value) {
-      await updateMenuItem(editingItem.value.id, data.category_id, data.name_ar, data.price, data.cost_calc_method, data.manual_cost_price)
+      await updateMenuItem(editingItem.value.id, data.category_id, data.name_ar, data.price, data.cost_calc_method, data.manual_cost_price, data.image_path || '')
     } else {
-      await createMenuItem(data.category_id, data.name_ar, data.price, data.cost_calc_method, data.manual_cost_price)
+      await createMenuItem(data.category_id, data.name_ar, data.price, data.cost_calc_method, data.manual_cost_price, data.image_path || '')
     }
     showForm.value = false
   } catch (err) {

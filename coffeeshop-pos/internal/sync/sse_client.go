@@ -19,26 +19,20 @@ type SSEEvent struct {
 
 // SSEClient connects to the API's SSE endpoint for real-time order events.
 type SSEClient struct {
-	baseURL    string
-	token      string
+	apiClient  *APIClient
 	httpClient *http.Client
 	onEvent    func(SSEEvent) // callback for received events
 }
 
 // NewSSEClient creates a new SSE client.
-func NewSSEClient(baseURL string, onEvent func(SSEEvent)) *SSEClient {
+func NewSSEClient(apiClient *APIClient, onEvent func(SSEEvent)) *SSEClient {
 	return &SSEClient{
-		baseURL: strings.TrimRight(baseURL, "/"),
+		apiClient: apiClient,
 		httpClient: &http.Client{
 			Timeout: 0, // no timeout for SSE stream
 		},
 		onEvent: onEvent,
 	}
-}
-
-// SetToken sets the auth token.
-func (c *SSEClient) SetToken(token string) {
-	c.token = token
 }
 
 // Connect starts the SSE connection with automatic reconnect.
@@ -54,9 +48,16 @@ func (c *SSEClient) Connect(ctx context.Context) {
 		default:
 		}
 
+		startTime := time.Now()
 		err := c.stream(ctx)
 		if err != nil {
 			slog.Warn("sse-client: connection error, reconnecting...", "error", err, "backoff", backoff)
+		}
+
+		// If connection was successful for a reasonable time (e.g., > 5 seconds),
+		// reset the backoff interval so we reconnect immediately on the next close.
+		if time.Since(startTime) > 5*time.Second {
+			backoff = time.Second
 		}
 
 		select {
@@ -65,24 +66,26 @@ func (c *SSEClient) Connect(ctx context.Context) {
 		case <-time.After(backoff):
 		}
 
-		// Exponential backoff, max 30s
-		backoff = backoff * 2
-		if backoff > 30*time.Second {
-			backoff = 30 * time.Second
+		// Exponential backoff, max 30s (only if the connection failed quickly)
+		if time.Since(startTime) <= 5*time.Second {
+			backoff = backoff * 2
+			if backoff > 30*time.Second {
+				backoff = 30 * time.Second
+			}
 		}
 	}
 }
 
 func (c *SSEClient) stream(ctx context.Context) error {
-	url := c.baseURL + "/api/v1/orders/stream"
+	url := c.apiClient.baseURL + "/api/v1/orders/stream"
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
 	req.Header.Set("Accept", "text/event-stream")
-	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+	if c.apiClient.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.apiClient.token)
 	}
 
 	resp, err := c.httpClient.Do(req)

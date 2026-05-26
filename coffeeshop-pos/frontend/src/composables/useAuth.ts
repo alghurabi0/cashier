@@ -5,7 +5,7 @@ let AuthService: any = null
 export interface LocalUser {
   id: string
   name_ar: string
-  role: 'admin' | 'cashier'
+  role: 'admin' | 'cashier' | 'kitchen' | 'dev'
 }
 
 const currentUser = ref<LocalUser | null>(null)

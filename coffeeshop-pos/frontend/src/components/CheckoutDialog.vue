@@ -1,6 +1,14 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import type { CartItem } from '../types'
 import { formatPrice } from '../types'
+
+interface Table {
+  id: string
+  number: string
+  token: string
+  is_active: boolean
+}
 
 defineProps<{
   items: CartItem[]
@@ -8,9 +16,27 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  confirm: []
+  confirm: [tableNumber: string]
   cancel: []
 }>()
+
+const tables = ref<Table[]>([])
+const selectedTable = ref('')
+let ManagementService: any = null
+
+onMounted(async () => {
+  try {
+    ManagementService = await import('../../bindings/coffeeshop-pos/internal/service/managementservice')
+    const result = await ManagementService.ListTables()
+    tables.value = result || []
+  } catch {
+    // Tables not available — that's fine, table selection is optional
+  }
+})
+
+function selectTable(number: string) {
+  selectedTable.value = selectedTable.value === number ? '' : number
+}
 </script>
 
 <template>
@@ -37,6 +63,22 @@ const emit = defineEmits<{
         <span class="total-value">{{ formatPrice(total) }} <small>د.ع</small></span>
       </div>
 
+      <!-- Table Selection (optional) -->
+      <div v-if="tables.length > 0" class="table-section">
+        <span class="section-label text-muted text-sm">الطاولة (اختياري)</span>
+        <div class="table-buttons">
+          <button
+            v-for="table in tables"
+            :key="table.id"
+            class="table-btn"
+            :class="{ active: selectedTable === table.number }"
+            @click="selectTable(table.number)"
+          >
+            🪑 {{ table.number }}
+          </button>
+        </div>
+      </div>
+
       <div class="payment-section">
         <span class="payment-label text-muted text-sm">طريقة الدفع</span>
         <div class="payment-methods">
@@ -49,7 +91,7 @@ const emit = defineEmits<{
 
       <div class="modal-actions">
         <button class="btn btn-ghost" @click="emit('cancel')">إلغاء</button>
-        <button class="btn btn-primary btn-lg" @click="emit('confirm')">
+        <button class="btn btn-primary btn-lg" @click="emit('confirm', selectedTable)">
           ✓ تأكيد ودفع
         </button>
       </div>
@@ -128,6 +170,45 @@ const emit = defineEmits<{
 .summary-total .total-value small {
   font-size: var(--font-size-sm);
   opacity: 0.7;
+}
+
+.table-section {
+  margin-bottom: var(--gap-lg);
+}
+
+.section-label {
+  display: block;
+  margin-bottom: var(--gap-sm);
+}
+
+.table-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-sm);
+}
+
+.table-btn {
+  padding: var(--gap-sm) var(--gap-md);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semi);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.table-btn:hover {
+  border-color: var(--color-accent);
+}
+
+.table-btn.active {
+  border-color: var(--color-accent);
+  background: rgba(233, 69, 96, 0.1);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-bold);
 }
 
 .payment-section {

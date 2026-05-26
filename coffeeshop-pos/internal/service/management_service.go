@@ -2,10 +2,12 @@ package service
 
 import (
 	"coffeeshop-pos/internal/model"
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 
 	posSync "coffeeshop-pos/internal/sync"
+	qrcode "github.com/skip2/go-qrcode"
 )
 
 // ManagementService is a Wails-bound service that proxies management
@@ -129,13 +131,14 @@ func (s *ManagementService) SetRecipe(menuItemID string, ingredients []RecipeIng
 // ── Menu Items ──
 
 // CreateMenuItem creates a new menu item via the API.
-func (s *ManagementService) CreateMenuItem(categoryID, nameAr string, price int64, costCalcMethod string, manualCostPrice int64) (*model.MenuItemWithCategory, error) {
+func (s *ManagementService) CreateMenuItem(categoryID, nameAr string, price int64, costCalcMethod string, manualCostPrice int64, imagePath string) (*model.MenuItemWithCategory, error) {
 	result, err := s.apiClient.CreateMenuItem(posSync.MenuItemPayload{
 		CategoryID:      categoryID,
 		NameAr:          nameAr,
 		Price:           price,
 		CostCalcMethod:  costCalcMethod,
 		ManualCostPrice: manualCostPrice,
+		ImagePath:       imagePath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create menu item: %w", err)
@@ -146,13 +149,14 @@ func (s *ManagementService) CreateMenuItem(categoryID, nameAr string, price int6
 }
 
 // UpdateMenuItem updates a menu item via the API.
-func (s *ManagementService) UpdateMenuItem(id, categoryID, nameAr string, price int64, costCalcMethod string, manualCostPrice int64) (*model.MenuItemWithCategory, error) {
+func (s *ManagementService) UpdateMenuItem(id, categoryID, nameAr string, price int64, costCalcMethod string, manualCostPrice int64, imagePath string) (*model.MenuItemWithCategory, error) {
 	result, err := s.apiClient.UpdateMenuItem(id, posSync.MenuItemPayload{
 		CategoryID:      categoryID,
 		NameAr:          nameAr,
 		Price:           price,
 		CostCalcMethod:  costCalcMethod,
 		ManualCostPrice: manualCostPrice,
+		ImagePath:       imagePath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to update menu item: %w", err)
@@ -255,4 +259,37 @@ func (s *ManagementService) DeleteTable(id string) error {
 	}
 	slog.Info("management: deleted table", "id", id)
 	return nil
+}
+
+// GetTableQRCode generates a QR code PNG image as a base64 data URL for a table's menu link.
+func (s *ManagementService) GetTableQRCode(tableToken string, menuBaseURL string) (string, error) {
+	if tableToken == "" {
+		return "", fmt.Errorf("table token is required")
+	}
+	if menuBaseURL == "" {
+		menuBaseURL = "http://localhost:5173"
+	}
+
+	menuURL := menuBaseURL + "?token=" + tableToken
+
+	png, err := qrcode.Encode(menuURL, qrcode.Medium, 512)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate QR code: %w", err)
+	}
+
+	dataURL := "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
+	return dataURL, nil
+}
+
+// UploadMenuItemImage opens the API upload endpoint with a file path from the frontend.
+func (s *ManagementService) UploadMenuItemImage(filePath string) (string, error) {
+	if filePath == "" {
+		return "", fmt.Errorf("file path is required")
+	}
+	url, err := s.apiClient.UploadImage(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to upload image: %w", err)
+	}
+	slog.Info("management: uploaded menu item image", "url", url)
+	return url, nil
 }

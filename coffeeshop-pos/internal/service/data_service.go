@@ -84,3 +84,13 @@ func (s *DataService) GetInventoryItems() ([]model.InventoryItem, error) {
 	}
 	return items, nil
 }
+
+// GetLastSyncTime returns the last successful sync timestamp from sync_meta.
+func (s *DataService) GetLastSyncTime() string {
+	var lastSync string
+	err := s.db.Get(&lastSync, `SELECT last_synced_at FROM sync_meta WHERE table_name = 'all'`)
+	if err != nil {
+		return ""
+	}
+	return lastSync
+}

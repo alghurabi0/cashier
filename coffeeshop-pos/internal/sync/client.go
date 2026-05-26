@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -83,6 +86,11 @@ func (c *APIClient) GetInventoryItems() ([]model.InventoryItem, error) {
 // GetRecipe fetches the recipe for a specific menu item.
 func (c *APIClient) GetRecipe(menuItemID string) ([]model.RecipeIngredientWithDetails, error) {
 	return fetchList[model.RecipeIngredientWithDetails](c, "/api/v1/menu-items/"+menuItemID+"/recipe")
+}
+
+// GetOrders fetches orders from the central API for a date range.
+func (c *APIClient) GetOrders(from, to string) ([]model.OrderWithItems, error) {
+	return fetchList[model.OrderWithItems](c, "/api/v1/orders?from="+from+"&to="+to)
 }
 
 // fetchList is a generic helper for fetching list endpoints.
@@ -246,6 +254,7 @@ type MenuItemPayload struct {
 	Price           int64  `json:"price"`
 	CostCalcMethod  string `json:"cost_calc_method"`
 	ManualCostPrice int64  `json:"manual_cost_price"`
+	ImagePath       string `json:"image_path"`
 }
 
 func (c *APIClient) CreateMenuItem(p MenuItemPayload) (*model.MenuItemWithCategory, error) {
@@ -398,3 +407,51 @@ func (c *APIClient) DeleteTable(id string) error {
 	return c.doDelete("/api/v1/tables/" + id)
 }
 
+// UploadImage uploads an image file to the API and returns the public URL.
+func (c *APIClient) UploadImage(filePath string) (string, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+	part, err := writer.CreateFormFile("file", filepath.Base(filePath))
+	if err != nil {
+		return "", fmt.Errorf("failed to create form file: %w", err)
+	}
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return "", fmt.Errorf("failed to copy file: %w", err)
+	}
+	writer.Close()
+
+	req, err := http.NewRequest("POST", c.baseURL+"/api/v1/uploads", &buf)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	if c.token != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("upload request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("upload failed (status %d): %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		URL string `json:"url"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", fmt.Errorf("failed to parse upload response: %w", err)
+	}
+	return result.URL, nil
+}

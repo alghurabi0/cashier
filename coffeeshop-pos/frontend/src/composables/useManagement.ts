@@ -99,22 +99,22 @@ export function useManagement() {
 
   // ── Menu Item CRUD ──
 
-  async function createMenuItem(categoryId: string, nameAr: string, price: number, costCalcMethod: string, manualCostPrice: number) {
+  async function createMenuItem(categoryId: string, nameAr: string, price: number, costCalcMethod: string, manualCostPrice: number, imagePath: string = '') {
     if (!ManagementService) throw new Error('Management service unavailable')
     isLoading.value = true
     try {
-      await ManagementService.CreateMenuItem(categoryId, nameAr, price, costCalcMethod, manualCostPrice)
+      await ManagementService.CreateMenuItem(categoryId, nameAr, price, costCalcMethod, manualCostPrice, imagePath)
       await loadMenuItems()
     } finally {
       isLoading.value = false
     }
   }
 
-  async function updateMenuItem(id: string, categoryId: string, nameAr: string, price: number, costCalcMethod: string, manualCostPrice: number) {
+  async function updateMenuItem(id: string, categoryId: string, nameAr: string, price: number, costCalcMethod: string, manualCostPrice: number, imagePath: string = '') {
     if (!ManagementService) throw new Error('Management service unavailable')
     isLoading.value = true
     try {
-      await ManagementService.UpdateMenuItem(id, categoryId, nameAr, price, costCalcMethod, manualCostPrice)
+      await ManagementService.UpdateMenuItem(id, categoryId, nameAr, price, costCalcMethod, manualCostPrice, imagePath)
       await loadMenuItems()
     } finally {
       isLoading.value = false

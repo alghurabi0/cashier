@@ -203,9 +203,18 @@ func (r *OrderRepository) CreateWebOrder(tableNumber string, items []model.WebOr
 
 	orderID := uuid.New()
 	var totalAmount int64
-	var orderItems []model.OrderItem
 
-	// Resolve prices and build order items
+	type resolvedItem struct {
+		itemID         uuid.UUID
+		menuItemID     uuid.UUID
+		quantity       int
+		price          int64
+		lineTotal      int64
+		nameArSnapshot string
+	}
+	var resolvedItems []resolvedItem
+
+	// Resolve prices and build temporary order items
 	for _, item := range items {
 		menuItemID, err := uuid.Parse(item.MenuItemID)
 		if err != nil {
@@ -227,20 +236,17 @@ func (r *OrderRepository) CreateWebOrder(tableNumber string, items []model.WebOr
 		lineTotal := menuItem.Price * int64(item.Quantity)
 		totalAmount += lineTotal
 
-		itemID := uuid.New()
-		var oi model.OrderItem
-		err = tx.Get(&oi,
-			`INSERT INTO order_items (id, order_id, menu_item_id, quantity, unit_price, line_total, name_ar_snapshot)
-			 VALUES ($1, $2, $3, $4, $5, $6, $7)
-			 RETURNING id, order_id, menu_item_id, quantity, unit_price, line_total, name_ar_snapshot`,
-			itemID, orderID, &menuItemID, item.Quantity, menuItem.Price, lineTotal, menuItem.NameAr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert order item: %w", err)
-		}
-		orderItems = append(orderItems, oi)
+		resolvedItems = append(resolvedItems, resolvedItem{
+			itemID:         uuid.New(),
+			menuItemID:     menuItemID,
+			quantity:       item.Quantity,
+			price:          menuItem.Price,
+			lineTotal:      lineTotal,
+			nameArSnapshot: menuItem.NameAr,
+		})
 	}
 
-	// Insert order
+	// Insert order first to satisfy foreign key constraints
 	var order model.Order
 	err = tx.Get(&order,
 		`INSERT INTO orders (id, order_number, source, table_number, status, total, payment_method, created_at)
@@ -249,6 +255,23 @@ func (r *OrderRepository) CreateWebOrder(tableNumber string, items []model.WebOr
 		orderID, orderNumber, tableNumber, totalAmount)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert order: %w", err)
+	}
+
+	// Insert order items
+	var orderItems []model.OrderItem
+	for _, ri := range resolvedItems {
+		var oi model.OrderItem
+		// Create a copy of the UUID to take its pointer
+		mID := ri.menuItemID
+		err = tx.Get(&oi,
+			`INSERT INTO order_items (id, order_id, menu_item_id, quantity, unit_price, line_total, name_ar_snapshot)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7)
+			 RETURNING id, order_id, menu_item_id, quantity, unit_price, line_total, name_ar_snapshot`,
+			ri.itemID, order.ID, &mID, ri.quantity, ri.price, ri.lineTotal, ri.nameArSnapshot)
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert order item: %w", err)
+		}
+		orderItems = append(orderItems, oi)
 	}
 
 	if err := tx.Commit(); err != nil {

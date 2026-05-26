@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useManagement } from '../composables/useManagement'
+import { useAuth } from '../composables/useAuth'
 import UserManagementPanel from '../components/settings/UserManagementPanel.vue'
 import TableManagementPanel from '../components/settings/TableManagementPanel.vue'
 import APIConnectionPanel from '../components/settings/APIConnectionPanel.vue'
 
 const { initBindings, triggerSync, isLoading } = useManagement()
+const { currentUser } = useAuth()
+
+const isDevUser = computed(() => currentUser.value?.role === 'dev' || currentUser.value?.role === 'admin')
 
 const shopName = ref('المقهى')
 const syncInterval = ref(30)
 const syncMessage = ref('')
+const menuBaseURL = ref('')
+const menuURLSaved = ref(false)
+
+let ConfigStoreService: any = null
 
 async function onSync() {
   syncMessage.value = ''
@@ -24,7 +32,23 @@ async function onSync() {
 
 onMounted(async () => {
   await initBindings()
+  try {
+    ConfigStoreService = await import('../../bindings/coffeeshop-pos/internal/service/configstoreservice')
+    const savedURL = await ConfigStoreService.Get('menu_base_url')
+    if (savedURL) menuBaseURL.value = savedURL
+  } catch { /* not available */ }
 })
+
+async function saveMenuBaseURL() {
+  if (!ConfigStoreService) return
+  try {
+    await ConfigStoreService.Set('menu_base_url', menuBaseURL.value.trim())
+    menuURLSaved.value = true
+    setTimeout(() => { menuURLSaved.value = false }, 2000)
+  } catch (err) {
+    console.error('Failed to save menu base URL:', err)
+  }
+}
 </script>
 
 <template>
@@ -81,6 +105,29 @@ onMounted(async () => {
       <div class="settings-section">
         <TableManagementPanel />
       </div>
+
+      <!-- Dev Settings (role-guarded) -->
+      <template v-if="isDevUser">
+        <div class="settings-divider"></div>
+        <div class="settings-section">
+          <h2 class="settings-section-title">🔧 إعدادات المطور</h2>
+          <div class="form-group">
+            <label class="form-label">رابط القائمة الإلكترونية (Menu Base URL)</label>
+            <div class="input-with-action">
+              <input
+                v-model="menuBaseURL"
+                type="url"
+                class="form-input"
+                placeholder="https://menu.example.com"
+              />
+              <button class="btn btn-primary btn-sm" @click="saveMenuBaseURL">
+                {{ menuURLSaved ? '✓ تم الحفظ' : 'حفظ' }}
+              </button>
+            </div>
+            <p class="form-hint text-muted text-sm">يُستخدم لتوليد رموز QR للطاولات</p>
+          </div>
+        </div>
+      </template>
 
       <div class="settings-divider"></div>
 
@@ -175,6 +222,12 @@ onMounted(async () => {
 
 .form-hint {
   margin-top: 2px;
+}
+
+.input-with-action {
+  display: flex;
+  gap: var(--gap-sm);
+  align-items: center;
 }
 
 .sync-feedback {

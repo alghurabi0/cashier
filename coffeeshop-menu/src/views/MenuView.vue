@@ -4,7 +4,6 @@ import { useMenu } from '../composables/useMenu'
 import { useCart } from '../composables/useCart'
 import CategoryBar from '../components/CategoryBar.vue'
 import MenuItemCard from '../components/MenuItemCard.vue'
-import { formatPrice } from '../types'
 
 const props = defineProps<{
   tableNumber: string

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
-import type { Category, MenuItem } from '../types'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import type { Category, MenuItem, OrderWithItems } from '../types'
 import { useCart } from '../composables/useCart'
 import { useOrders } from '../composables/useOrders'
 import HeaderBar from '../components/HeaderBar.vue'
@@ -8,6 +8,7 @@ import CategoryTabs from '../components/CategoryTabs.vue'
 import MenuGrid from '../components/MenuGrid.vue'
 import CartPanel from '../components/CartPanel.vue'
 import CheckoutDialog from '../components/CheckoutDialog.vue'
+import OrderQueuePanel from '../components/OrderQueuePanel.vue'
 
 // ── State ──
 const categories = ref<Category[]>([])
@@ -20,6 +21,14 @@ const syncStatus = ref<'online' | 'offline' | 'syncing'>('offline')
 
 const { items: cartItems, total, itemCount, addItem, removeItem, incrementQty, decrementQty, clear: clearCart } = useCart()
 const { todayOrders, addOrder } = useOrders()
+
+// ── Order queue state ──
+const acceptedOrders = computed(() =>
+  todayOrders.value.filter(o => o.status === 'accepted' && o.source === 'cashier')
+)
+const recentCompletedOrders = computed(() =>
+  todayOrders.value.filter(o => o.status === 'completed' && o.source === 'cashier').slice(0, 5)
+)
 
 // ── Wails Bindings ──
 let DataService: any = null
@@ -97,7 +106,7 @@ function onCheckout() {
   showCheckout.value = true
 }
 
-async function onConfirmOrder() {
+async function onConfirmOrder(tableNumber: string) {
   if (!OrderService) {
     showToast('خطأ: خدمة الطلبات غير متوفرة')
     return
@@ -110,7 +119,7 @@ async function onConfirmOrder() {
       quantity: item.quantity,
     }))
 
-    const order = await OrderService.CreateOrder(cartData, 'cash')
+    const order = await OrderService.CreateOrder(cartData, 'cash', tableNumber || '')
     if (order) {
       addOrder(order)
       if (ReceiptService) {
@@ -135,19 +144,34 @@ function showToast(message: string) {
   setTimeout(() => { toastVisible.value = false }, 3000)
 }
 
+// ── Order queue polling ──
+let queuePoll: ReturnType<typeof setInterval> | null = null
+
 // ── Lifecycle ──
 onMounted(async () => {
   await initBindings()
   await loadCategories()
   await loadMenuItems(null)
   await loadTodayOrders()
+
+  // Poll for order status changes (kitchen may complete orders)
+  queuePoll = setInterval(() => {
+    loadTodayOrders()
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (queuePoll) {
+    clearInterval(queuePoll)
+    queuePoll = null
+  }
 })
 </script>
 
 <template>
   <div class="pos-view">
     <HeaderBar
-      :order-count="todayOrders.length"
+      :order-count="acceptedOrders.length"
       :sync-status="syncStatus"
     />
 
@@ -174,6 +198,11 @@ onMounted(async () => {
         @checkout="onCheckout"
       />
     </div>
+
+    <OrderQueuePanel
+      :accepted-orders="acceptedOrders"
+      :completed-orders="recentCompletedOrders"
+    />
 
     <CheckoutDialog
       v-if="showCheckout"

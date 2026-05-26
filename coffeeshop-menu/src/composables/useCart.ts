@@ -76,7 +76,8 @@ export function useCart() {
         throw new Error(err.error || 'Failed to submit order')
       }
 
-      orderResult.value = await res.json()
+      const json = await res.json()
+      orderResult.value = json.data
       clearCart()
     } catch (err: any) {
       orderError.value = err.message

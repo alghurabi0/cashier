@@ -120,8 +120,8 @@ func (s *AuthService) CreateUser(nameAr, pin, role string) (*LocalUser, error) {
 	if nameAr == "" || pin == "" {
 		return nil, fmt.Errorf("name and PIN are required")
 	}
-	if role != "admin" && role != "cashier" {
-		return nil, fmt.Errorf("role must be 'admin' or 'cashier'")
+	if role != "admin" && role != "cashier" && role != "kitchen" && role != "dev" {
+		return nil, fmt.Errorf("role must be 'admin', 'cashier', 'kitchen', or 'dev'")
 	}
 	if len(pin) < 4 {
 		return nil, fmt.Errorf("PIN must be at least 4 digits")
@@ -214,7 +214,7 @@ func (s *AuthService) requireAdmin() error {
 	if s.currentUser == nil {
 		return fmt.Errorf("not logged in")
 	}
-	if s.currentUser.Role != "admin" {
+	if s.currentUser.Role != "admin" && s.currentUser.Role != "dev" {
 		return fmt.Errorf("admin access required")
 	}
 	return nil

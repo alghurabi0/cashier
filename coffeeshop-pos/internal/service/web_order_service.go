@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	gosync "sync"
+	"time"
 
 	posSync "coffeeshop-pos/internal/sync"
 
@@ -18,6 +19,7 @@ type WebOrderService struct {
 	db        *sqlx.DB
 	apiClient *posSync.APIClient
 	mu        gosync.RWMutex
+	fetched   bool
 
 	// In-memory queues for web orders by status
 	pendingOrders   []model.OrderWithItems
@@ -49,12 +51,14 @@ func (s *WebOrderService) HandleSSEEvent(event posSync.SSEEvent) {
 		slog.Info("web-orders: new order received", "order_number", order.OrderNumber, "table", order.TableNumber)
 	case "order_status":
 		// Another POS client may have updated the status
+		// TODO
 		slog.Debug("web-orders: status update event received")
 	}
 }
 
 // GetPendingOrders returns current pending web orders.
 func (s *WebOrderService) GetPendingOrders() []model.OrderWithItems {
+	s.ensureFetched()
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	result := make([]model.OrderWithItems, len(s.pendingOrders))
@@ -64,6 +68,7 @@ func (s *WebOrderService) GetPendingOrders() []model.OrderWithItems {
 
 // GetAcceptedOrders returns accepted (in-progress) web orders.
 func (s *WebOrderService) GetAcceptedOrders() []model.OrderWithItems {
+	s.ensureFetched()
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	result := make([]model.OrderWithItems, len(s.acceptedOrders))
@@ -73,11 +78,64 @@ func (s *WebOrderService) GetAcceptedOrders() []model.OrderWithItems {
 
 // GetCompletedOrders returns completed web orders.
 func (s *WebOrderService) GetCompletedOrders() []model.OrderWithItems {
+	s.ensureFetched()
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	result := make([]model.OrderWithItems, len(s.completedOrders))
 	copy(result, s.completedOrders)
 	return result
+}
+
+// ensureFetched guarantees that we've pulled the current web orders from the API at least once.
+func (s *WebOrderService) ensureFetched() {
+	s.mu.Lock()
+	alreadyFetched := s.fetched
+	s.mu.Unlock()
+
+	if alreadyFetched {
+		return
+	}
+
+	if err := s.FetchPendingFromAPI(); err != nil {
+		slog.Warn("web-orders: failed to fetch initial pending orders from API", "error", err)
+	}
+}
+
+// FetchPendingFromAPI pulls pending, accepted, and completed web orders for today from the central API.
+// This is used on startup/refresh to populate the in-memory queue.
+func (s *WebOrderService) FetchPendingFromAPI() error {
+	// Call API to get today's orders
+	today := time.Now().Format("2006-01-02")
+	orders, err := s.apiClient.GetOrders(today, today)
+	if err != nil {
+		return err
+	}
+
+	var pending []model.OrderWithItems
+	var accepted []model.OrderWithItems
+	var completed []model.OrderWithItems
+
+	for _, o := range orders {
+		if o.Source == "web_menu" {
+			switch o.Status {
+			case "pending":
+				pending = append(pending, o)
+			case "accepted":
+				accepted = append(accepted, o)
+			case "completed":
+				completed = append(completed, o)
+			}
+		}
+	}
+
+	s.mu.Lock()
+	s.pendingOrders = pending
+	s.acceptedOrders = accepted
+	s.completedOrders = completed
+	s.fetched = true
+	s.mu.Unlock()
+
+	return nil
 }
 
 // AcceptOrder accepts a pending order, triggers stock deduction, and updates the API.
@@ -143,6 +201,10 @@ func (s *WebOrderService) CompleteOrder(orderID string) error {
 			o.Status = "completed"
 			s.completedOrders = append(s.completedOrders, o)
 			s.acceptedOrders = append(s.acceptedOrders[:i], s.acceptedOrders[i+1:]...)
+
+			// Sync local SQLite status so order history shows "completed"
+			s.db.Exec(`UPDATE orders SET status = 'completed' WHERE id = ?`, orderID)
+
 			slog.Info("web-orders: order completed", "order_id", orderID)
 			return nil
 		}

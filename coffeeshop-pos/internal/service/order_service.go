@@ -23,10 +23,10 @@ func NewOrderService(db *sqlx.DB) *OrderService {
 
 // CreateOrder is called from the frontend when the cashier confirms checkout.
 // 1. Generates UUID + local daily order number
-// 2. Inserts order + order_items into SQLite
+// 2. Inserts order + order_items into SQLite with status 'accepted' (kitchen will complete)
 // 3. Runs the recipe engine to deduct local inventory
 // 4. Returns the created order
-func (s *OrderService) CreateOrder(items []model.CartItem, paymentMethod string) (*model.OrderWithItems, error) {
+func (s *OrderService) CreateOrder(items []model.CartItem, paymentMethod string, tableNumber string) (*model.OrderWithItems, error) {
 	if len(items) == 0 {
 		return nil, fmt.Errorf("order must have at least one item")
 	}
@@ -70,11 +70,11 @@ func (s *OrderService) CreateOrder(items []model.CartItem, paymentMethod string)
 	}
 	defer tx.Rollback()
 
-	// Insert order
+	// Insert order (status = 'accepted', kitchen will mark as 'completed')
 	_, err = tx.Exec(
 		`INSERT INTO orders (id, order_number, source, table_number, status, total, payment_method, created_at, synced)
-		 VALUES (?, ?, 'cashier', '', 'completed', ?, ?, ?, 0)`,
-		orderID, orderNumber, total, paymentMethod, createdAt,
+		 VALUES (?, ?, 'cashier', ?, 'accepted', ?, ?, ?, 0)`,
+		orderID, orderNumber, tableNumber, total, paymentMethod, createdAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert order: %w", err)
@@ -102,13 +102,14 @@ func (s *OrderService) CreateOrder(items []model.CartItem, paymentMethod string)
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	slog.Info("order created", "order_id", orderID, "order_number", orderNumber, "total", total)
+	slog.Info("order created", "order_id", orderID, "order_number", orderNumber, "total", total, "table", tableNumber)
 
 	order := model.Order{
 		ID:            orderID,
 		OrderNumber:   orderNumber,
 		Source:        "cashier",
-		Status:        "completed",
+		TableNumber:   tableNumber,
+		Status:        "accepted",
 		Total:         total,
 		PaymentMethod: paymentMethod,
 		CreatedAt:     createdAt,
@@ -116,6 +117,88 @@ func (s *OrderService) CreateOrder(items []model.CartItem, paymentMethod string)
 	}
 
 	return &model.OrderWithItems{Order: order, Items: orderItems}, nil
+}
+
+// CompleteCashierOrder marks a cashier order as completed (called from kitchen).
+func (s *OrderService) CompleteCashierOrder(orderID string) (*model.OrderWithItems, error) {
+	if orderID == "" {
+		return nil, fmt.Errorf("order ID is required")
+	}
+
+	// Check current status
+	var currentStatus string
+	err := s.db.Get(&currentStatus, `SELECT status FROM orders WHERE id = ?`, orderID)
+	if err != nil {
+		return nil, fmt.Errorf("order not found: %w", err)
+	}
+
+	if currentStatus != "accepted" {
+		return nil, fmt.Errorf("can only complete accepted orders (current status: %s)", currentStatus)
+	}
+
+	_, err = s.db.Exec(
+		`UPDATE orders SET status = 'completed' WHERE id = ?`,
+		orderID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to complete order: %w", err)
+	}
+
+	// Fetch the updated order with items
+	var order model.Order
+	err = s.db.Get(&order,
+		`SELECT id, order_number, source, table_number, status, total, payment_method, created_at, synced
+		 FROM orders WHERE id = ?`, orderID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch completed order: %w", err)
+	}
+
+	var items []model.OrderItem
+	err = s.db.Select(&items,
+		`SELECT id, order_id, menu_item_id, quantity, unit_price, line_total, name_ar_snapshot
+		 FROM order_items WHERE order_id = ?
+		 ORDER BY name_ar_snapshot ASC`, orderID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch order items: %w", err)
+	}
+
+	slog.Info("cashier order completed", "order_id", orderID, "order_number", order.OrderNumber)
+	return &model.OrderWithItems{Order: order, Items: items}, nil
+}
+
+// GetAcceptedOrders returns all orders with status 'accepted' from today (both cashier and web sources).
+// Used by the Kitchen Display to show orders waiting to be prepared.
+func (s *OrderService) GetAcceptedOrders() ([]model.OrderWithItems, error) {
+	today := time.Now().Format("2006-01-02")
+
+	var orders []model.Order
+	err := s.db.Select(&orders,
+		`SELECT id, order_number, source, table_number, status, total, payment_method, created_at, synced
+		 FROM orders
+		 WHERE status = 'accepted' AND created_at LIKE ?
+		 ORDER BY created_at ASC`,
+		today+"%",
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch accepted orders: %w", err)
+	}
+
+	var result []model.OrderWithItems
+	for _, order := range orders {
+		var items []model.OrderItem
+		err := s.db.Select(&items,
+			`SELECT id, order_id, menu_item_id, quantity, unit_price, line_total, name_ar_snapshot
+			 FROM order_items WHERE order_id = ?
+			 ORDER BY name_ar_snapshot ASC`,
+			order.ID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch order items: %w", err)
+		}
+		result = append(result, model.OrderWithItems{Order: order, Items: items})
+	}
+
+	return result, nil
 }
 
 // GetTodayOrders returns all orders created today.

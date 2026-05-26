@@ -17,6 +17,7 @@ import (
 	"coffeeshop-api/internal/repository"
 	"coffeeshop-api/internal/service"
 	"coffeeshop-api/internal/sse"
+	"coffeeshop-api/internal/storage"
 )
 
 func main() {
@@ -76,6 +77,18 @@ func main() {
 	webOrderHandler := handler.NewWebOrderHandler(orderService, tableService, sseHub)
 	sseHandler := handler.NewSSEHandler(sseHub)
 
+	// R2 storage (nil if not configured)
+	r2, err := storage.NewR2Storage()
+	if err != nil {
+		slog.Warn("R2 storage init failed", "error", err)
+	}
+	if r2 != nil {
+		slog.Info("R2 storage configured")
+	} else {
+		slog.Warn("R2 storage not configured (uploads will be unavailable)")
+	}
+	uploadHandler := handler.NewUploadHandler(r2)
+
 	// Auth middleware
 	authMw := middleware.Auth(cfg.JWTSecret)
 
@@ -130,6 +143,9 @@ func main() {
 	// SSE stream (auth required)
 	mux.HandleFunc("GET /api/v1/orders/stream", authMw(sseHandler.Stream))
 
+	// File upload (auth required)
+	mux.HandleFunc("POST /api/v1/uploads", authMw(uploadHandler.Upload))
+
 	// Apply global middleware
 	finalHandler := middleware.Chain(mux,
 		middleware.Logger,
@@ -137,13 +153,11 @@ func main() {
 		middleware.CORS,
 	)
 
-	// Create server
+	// Create server (no ReadTimeout/WriteTimeout to support long-lived SSE connections)
 	srv := &http.Server{
-		Addr:         ":" + cfg.Port,
-		Handler:      finalHandler,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:        ":" + cfg.Port,
+		Handler:     finalHandler,
+		IdleTimeout: 60 * time.Second,
 	}
 
 	// Start server in a goroutine

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"coffeeshop-api/internal/sse"
 )
@@ -43,6 +44,10 @@ func (h *SSEHandler) Stream(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, ": connected\n\n")
 	flusher.Flush()
 
+	// Keepalive ticker to prevent timeouts
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
 	// Stream events until client disconnects
 	ctx := r.Context()
 	for {
@@ -50,6 +55,10 @@ func (h *SSEHandler) Stream(w http.ResponseWriter, r *http.Request) {
 		case <-ctx.Done():
 			slog.Info("sse: client disconnected")
 			return
+		case <-ticker.C:
+			// Send empty comment line as keepalive
+			fmt.Fprint(w, ": keepalive\n\n")
+			flusher.Flush()
 		case event := <-ch:
 			formatted, err := sse.FormatSSE(event)
 			if err != nil {

@@ -12,7 +12,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <button class="menu-item-card" @click="emit('add', item)">
+  <button class="menu-item-card" :class="{ 'has-image': item.image_path }" @click="emit('add', item)">
+    <img v-if="item.image_path" :src="item.image_path" :alt="item.name_ar" class="card-bg-image" loading="lazy" />
     <div class="card-body">
       <span class="item-name">{{ item.name_ar }}</span>
       <span class="item-price">{{ formatPrice(item.price) }} <small>د.ع</small></span>
@@ -27,7 +28,7 @@ const emit = defineEmits<{
 .menu-item-card {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
   padding: var(--gap-lg);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -42,6 +43,38 @@ const emit = defineEmits<{
   user-select: none;
 }
 
+.menu-item-card.has-image {
+  min-height: 140px;
+  padding: 0;
+}
+
+.card-bg-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.has-image .card-body {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.3) 60%, transparent 100%);
+  padding: var(--gap-lg);
+  margin-top: auto;
+}
+
+.has-image .item-name {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.has-image .item-price {
+  color: #ffcc80;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
 .menu-item-card::before {
   content: '';
   position: absolute;
@@ -49,6 +82,11 @@ const emit = defineEmits<{
   background: linear-gradient(135deg, transparent 60%, var(--color-accent-glow));
   opacity: 0;
   transition: opacity var(--transition-fast);
+  z-index: 1;
+}
+
+.has-image::before {
+  display: none;
 }
 
 .menu-item-card:hover {
@@ -107,7 +145,7 @@ const emit = defineEmits<{
   font-size: var(--font-size-lg);
   opacity: 0;
   transition: all var(--transition-fast);
-  z-index: 1;
+  z-index: 3;
 }
 
 .menu-item-card:hover .card-add-hint {
@@ -116,3 +154,4 @@ const emit = defineEmits<{
   color: white;
 }
 </style>
+

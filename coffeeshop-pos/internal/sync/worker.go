@@ -273,6 +273,12 @@ func (w *Worker) PushOrders() error {
 			continue
 		}
 
+		// Format CreatedAt to RFC3339 for the central API
+		createdAtStr := order.CreatedAt
+		if t, err := time.ParseInLocation("2006-01-02 15:04:05", order.CreatedAt, time.Local); err == nil {
+			createdAtStr = t.Format(time.RFC3339)
+		}
+
 		// Build push payload
 		payload := OrderPushPayload{
 			ID:            order.ID,
@@ -280,7 +286,7 @@ func (w *Worker) PushOrders() error {
 			TableNumber:   order.TableNumber,
 			Total:         order.Total,
 			PaymentMethod: order.PaymentMethod,
-			CreatedAt:     order.CreatedAt,
+			CreatedAt:     createdAtStr,
 		}
 		for _, item := range items {
 			payload.Items = append(payload.Items, OrderItemPush{
