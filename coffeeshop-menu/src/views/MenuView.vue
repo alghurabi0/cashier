@@ -23,9 +23,7 @@ const filteredItems = computed(() => {
   return menuItems.value.filter(i => i.category_id === selectedCategoryId.value)
 })
 
-onMounted(() => {
-  loadAll()
-})
+onMounted(() => { loadAll() })
 
 function onAddItem(menuItemId: string, nameAr: string, price: number) {
   addItem(menuItemId, nameAr, price)
@@ -35,11 +33,17 @@ function onAddItem(menuItemId: string, nameAr: string, price: number) {
 <template>
   <div class="menu-view">
     <header class="menu-header">
-      <div class="header-top">
-        <h1 class="shop-name">☕ المقهى</h1>
-        <span class="table-info">🪑 طاولة {{ tableNumber }}</span>
+      <div class="header-logo">
+        <div class="logo-circle"><span class="logo-text">NJ</span></div>
+        <div class="header-titles">
+          <h1 class="shop-name">NJ Coffee</h1>
+          <p class="shop-tagline">اختر ما يحلو لك ☕</p>
+        </div>
       </div>
-      <p class="shop-tagline">اختر ما يحلو لك</p>
+      <div class="table-badge">
+        <span>🪑</span>
+        <span>طاولة {{ tableNumber }}</span>
+      </div>
     </header>
 
     <div class="menu-content">
@@ -48,12 +52,10 @@ function onAddItem(menuItemId: string, nameAr: string, price: number) {
         :selected-id="selectedCategoryId"
         @select="selectedCategoryId = $event"
       />
-
       <div v-if="isLoading" class="loading">
-        <span class="loading-spinner">⏳</span>
-        جاري التحميل...
+        <div class="loading-ring"></div>
+        <span>جاري التحميل...</span>
       </div>
-
       <div v-else class="menu-grid">
         <MenuItemCard
           v-for="item in filteredItems"
@@ -62,161 +64,67 @@ function onAddItem(menuItemId: string, nameAr: string, price: number) {
           @add="onAddItem"
         />
       </div>
-
       <div v-if="!isLoading && filteredItems.length === 0" class="empty">
         لا توجد منتجات
       </div>
     </div>
 
-    <!-- Floating Cart Button -->
-    <button
-      v-if="itemCount > 0"
-      class="fab-cart"
-      @click="emit('open-cart')"
-    >
-      <span class="fab-icon">🛒</span>
+    <button v-if="itemCount > 0" class="fab-cart" @click="emit('open-cart')">
+      <span>🛒</span>
       <span class="fab-count">{{ itemCount }}</span>
-      <span class="fab-label">عرض السلة</span>
+      <span>عرض السلة</span>
     </button>
   </div>
 </template>
 
 <style scoped>
-.menu-view {
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
+.menu-view { min-height: 100dvh; display: flex; flex-direction: column; background: var(--color-bg); }
 
 .menu-header {
-  padding: var(--gap-xl) var(--gap-lg) var(--gap-lg);
-  background: linear-gradient(135deg, var(--color-surface-2), var(--color-surface));
-  border-bottom: 1px solid var(--color-border);
+  padding: var(--gap-lg) var(--gap-lg) var(--gap-md);
+  background: linear-gradient(160deg, #0d2918 0%, #0a1f12 100%);
+  border-bottom: 1px solid var(--color-border-gold);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.header-logo { display: flex; align-items: center; gap: var(--gap-md); }
+.logo-circle {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, #c8960a, #e0aa12);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 20px rgba(200,150,10,0.4); flex-shrink: 0;
+}
+.logo-text { font-size: 1.2rem; font-weight: 900; color: #0a1f12; letter-spacing: 1px; }
+.header-titles { display: flex; flex-direction: column; }
+.shop-name { font-size: 1.4rem; font-weight: 900; color: var(--color-accent); letter-spacing: 1px; line-height: 1.1; }
+.shop-tagline { font-size: var(--font-size-sm); color: var(--color-text-muted); margin-top: 2px; }
+.table-badge {
+  display: flex; align-items: center; gap: var(--gap-xs);
+  background: var(--color-accent-light); border: 1px solid var(--color-border-gold);
+  padding: var(--gap-xs) var(--gap-md); border-radius: var(--radius-full);
+  font-size: var(--font-size-sm); font-weight: 700; color: var(--color-accent);
 }
 
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.menu-content { flex: 1; padding: var(--gap-md) var(--gap-md) 100px; display: flex; flex-direction: column; gap: var(--gap-md); }
+.menu-grid { display: flex; flex-direction: column; gap: var(--gap-md); }
+@media (min-width: 600px) { .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); } }
 
-.shop-name {
-  font-size: var(--font-size-2xl);
-  font-weight: 800;
-}
+.loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--gap-md); padding: var(--gap-xl) 0; color: var(--color-text-muted); }
+.loading-ring { width: 40px; height: 40px; border: 3px solid var(--color-surface-3); border-top-color: var(--color-accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: var(--gap-xl); color: var(--color-text-dim); font-size: var(--font-size-lg); }
 
-.table-info {
-  background: var(--color-surface-3);
-  padding: var(--gap-xs) var(--gap-md);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-accent);
-}
-
-.shop-tagline {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-md);
-  margin-top: var(--gap-xs);
-}
-
-.menu-content {
-  flex: 1;
-  padding: var(--gap-lg);
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-md);
-}
-
-.menu-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-md);
-}
-
-@media (min-width: 600px) {
-  .menu-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--gap-sm);
-  padding: var(--gap-xl);
-  color: var(--color-text-muted);
-}
-
-.loading-spinner {
-  font-size: 1.5rem;
-  animation: spin 1.5s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.empty {
-  text-align: center;
-  padding: var(--gap-xl);
-  color: var(--color-text-dim);
-  font-size: var(--font-size-lg);
-}
-
-/* Floating Action Button */
 .fab-cart {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: var(--gap-sm);
-  padding: var(--gap-md) var(--gap-xl);
-  background: var(--color-accent);
-  color: var(--color-bg);
-  border: none;
-  border-radius: var(--radius-full);
-  font-family: var(--font-family);
-  font-size: var(--font-size-md);
-  font-weight: 800;
-  cursor: pointer;
-  box-shadow: 0 8px 32px rgba(212, 165, 116, 0.35);
-  animation: fabSlideUp 0.3s ease;
-  z-index: 100;
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: var(--gap-sm);
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #c8960a, #e0aa12);
+  color: #0a1f12; border: none; border-radius: var(--radius-full);
+  font-family: var(--font-family); font-size: var(--font-size-md); font-weight: 800;
+  cursor: pointer; box-shadow: 0 8px 32px rgba(200,150,10,0.45);
+  animation: fabUp 0.3s ease; z-index: 100;
 }
-
-.fab-cart:active {
-  transform: translateX(-50%) scale(0.95);
-}
-
-@keyframes fabSlideUp {
-  from {
-    transform: translateX(-50%) translateY(100px);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
-  }
-}
-
-.fab-icon {
-  font-size: 1.2rem;
-}
-
-.fab-count {
-  background: var(--color-bg);
-  color: var(--color-accent);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--font-size-sm);
-}
+.fab-cart:active { transform: translateX(-50%) scale(0.95); }
+@keyframes fabUp { from { transform: translateX(-50%) translateY(100px); opacity: 0; } to { transform: translateX(-50%) translateY(0); opacity: 1; } }
+.fab-count { background: #0a1f12; color: var(--color-accent); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: var(--font-size-sm); font-weight: 800; }
 </style>

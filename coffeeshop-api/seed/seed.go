@@ -39,10 +39,6 @@ func main() {
 		log.Fatalf("failed to seed inventory items: %v", err)
 	}
 
-	if err := seedRecipes(db); err != nil {
-		log.Fatalf("failed to seed recipes: %v", err)
-	}
-
 	fmt.Println("✅ Seeding complete!")
 }
 
@@ -52,12 +48,21 @@ func seedCategories(db *sqlx.DB) error {
 		SortOrder int
 	}{
 		{"مشروبات ساخنة", 1},
-		{"مشروبات باردة", 2},
-		{"حلويات", 3},
+		{"شاي", 2},
+		{"لاتيه", 3},
+		{"كابتشينو", 4},
+		{"آيس درنك", 5},
+		{"آيس لاتيه", 6},
+		{"فرابتشينو", 7},
+		{"شيكات", 8},
+		{"موهيتو", 9},
+		{"آيس كريم", 10},
+		{"كريب", 11},
+		{"وافل", 12},
+		{"VIP", 13},
 	}
 
 	for _, c := range categories {
-		// Check if exists
 		var count int
 		err := db.Get(&count, `SELECT COUNT(*) FROM categories WHERE name_ar = $1`, c.NameAr)
 		if err != nil {
@@ -82,7 +87,6 @@ func seedCategories(db *sqlx.DB) error {
 }
 
 func seedMenuItems(db *sqlx.DB) error {
-	// Fetch category IDs by name
 	type catRow struct {
 		ID     string `db:"id"`
 		NameAr string `db:"name_ar"`
@@ -100,22 +104,110 @@ func seedMenuItems(db *sqlx.DB) error {
 	items := []struct {
 		CategoryNameAr string
 		NameAr         string
-		Price          int64 // fils (IQD × 1000)
+		Description    string
+		Price          int64
 	}{
-		// مشروبات ساخنة (Hot drinks)
-		{"مشروبات ساخنة", "اسبريسو", 2000},
-		{"مشروبات ساخنة", "لاتيه", 3500},
-		{"مشروبات ساخنة", "كابتشينو", 3500},
-		{"مشروبات ساخنة", "شاي", 1500},
+		// مشروبات ساخنة
+		{"مشروبات ساخنة", "اسبريسو سينكل", "اسبريسو", 1500},
+		{"مشروبات ساخنة", "اسبريسو دبل", "اسبريسو", 2000},
+		{"مشروبات ساخنة", "امريكانو", "اسبريسو ، ماء ساخن", 2000},
+		{"مشروبات ساخنة", "كورتادو", "اسبريسو ، حليب ساخن", 2500},
+		{"مشروبات ساخنة", "هوت جوكليت", "شوكولاتة ، حليب", 3000},
+		{"مشروبات ساخنة", "اسبرسو ماكياتو", "اسبريسو ، زغوة حليب", 2500},
+		{"مشروبات ساخنة", "موكا", "اسبريسو ، حليب ، شوكولاتة", 4000},
+		{"مشروبات ساخنة", "اسبريسو جكللتيه", "اسبريسو ، شوكولاتة", 2000},
+		{"مشروبات ساخنة", "قهوة فرنسية", "قهوة ، ماء ساخن", 3000},
+		{"مشروبات ساخنة", "حليب زعفران", "حليب ، زعفران", 2500},
 
-		// مشروبات باردة (Cold drinks)
-		{"مشروبات باردة", "آيس لاتيه", 4000},
-		{"مشروبات باردة", "آيس أمريكانو", 3500},
-		{"مشروبات باردة", "سموذي فراولة", 4500},
+		// شاي
+		{"شاي", "شاي", "شاي سياه", 1000},
+		{"شاي", "شاي كرك", "شاي سياه ، حليب ، سكر ، هيل", 3000},
+		{"شاي", "شاي ماسالا", "شاي سياه ، حليب ، بهارات ماسالا ، سكر", 3000},
+		{"شاي", "شاي زعفران", "شاي سياه ، زعفران", 1500},
+		{"شاي", "شاي أعشاب", "أعشاب طبيعية", 2000},
 
-		// حلويات (Sweets)
-		{"حلويات", "كيك الشوكولاتة", 3000},
-		{"حلويات", "تشيز كيك", 3500},
+		// لاتيه
+		{"لاتيه", "لاتيه", "اسبريسو ، حليب", 4000},
+		{"لاتيه", "لاتيه بندق", "اسبريسو ، حليب ، سيروب بندق", 4500},
+		{"لاتيه", "لاتيه فانيلا", "اسبريسو ، حليب ، سيروب فانيلا", 4500},
+		{"لاتيه", "لاتيه كارامل", "اسبريسو ، حليب ، سيروب كارامل", 4500},
+		{"لاتيه", "لاتيه جوكليت", "اسبريسو ، حليب ، شوكولاتة", 4500},
+		{"لاتيه", "لاتيه كوكونات", "اسبريسو ، حليب ، سيروب كوكونات", 4500},
+		{"لاتيه", "لاتيه فراولة", "اسبريسو ، حليب ، سيروب فراولة", 4500},
+		{"لاتيه", "لاتيه فستق", "اسبريسو ، حليب ، سيروب فستق", 4500},
+		{"لاتيه", "لاتيه مانكو", "اسبريسو ، حليب ، سيروب مانكو", 4500},
+		{"لاتيه", "لاتيه لوتوس", "اسبريسو ، حليب ، لوتوس", 4500},
+		{"لاتيه", "لاتيه نوتلا", "اسبريسو ، حليب ، نوتلا", 4500},
+
+		// كابتشينو
+		{"كابتشينو", "كابتشينو", "اسبريسو ، حليب ، فوم الحليب", 3000},
+		{"كابتشينو", "كابتشينو بندق", "اسبريسو ، حليب ، فوم الحليب ، بندق", 3500},
+		{"كابتشينو", "كابتشينو فانيلا", "اسبريسو ، حليب ، فوم الحليب ، فانيلا", 3500},
+		{"كابتشينو", "كابتشينو كارامل", "اسبريسو ، حليب ، فوم الحليب ، كارامل", 3500},
+		{"كابتشينو", "كابتشينو جوكليت", "اسبريسو ، حليب ، فوم الحليب ، شوكولاتة", 3500},
+		{"كابتشينو", "كابتشينو كوكونات", "اسبريسو ، حليب ، فوم الحليب ، كوكونات", 3500},
+
+		// آيس درنك
+		{"آيس درنك", "ايس دبل", "اسبريسو دبل ، ماء ، ثلج", 2500},
+		{"آيس درنك", "كلد برو", "قهوة كلد برو ، ماء ، ثلج", 2500},
+		{"آيس درنك", "ايس امريكانو", "اسبريسو ، ماء ، ثلج", 2500},
+		{"آيس درنك", "ايس كارامل ماكياتو", "حليب ، اسبريسو ، صوص كراميل ، ثلج", 4500},
+		{"آيس درنك", "ايس موكا", "حليب ، اسبريسو ، صوص شوكولاتة ، ثلج", 4500},
+		{"آيس درنك", "ايس قهوة شوكليت", "حليب ، قهوة ، صوص شوكليت ، ثلج", 4000},
+		{"آيس درنك", "ايس شوكولوس", "حليب ، شوكولاتة ، صوص شوكولاتة ، ثلج", 4500},
+		{"آيس درنك", "ايس لوتوس موكا", "حليب ، اسبريسو ، صوص لوتوس ، ثلج", 4500},
+
+		// آيس لاتيه
+		{"آيس لاتيه", "ايس لاتيه", "اسبريسو ، حليب ، ثلج", 4500},
+		{"آيس لاتيه", "إسبانيش لاتيه", "اسبريسو ، حليب مكثف ، ثلج", 5000},
+		{"آيس لاتيه", "ايس لاتيه كارامل", "اسبريسو ، حليب ، صوص كارامل ، ثلج", 5000},
+		{"آيس لاتيه", "ايس لاتية بندق", "اسبريسو ، حليب ، صوص بندق ، ثلج", 5000},
+		{"آيس لاتيه", "ايس لاتية فانيلا", "اسبريسو ، حليب ، صوص فانيلا ، ثلج", 5000},
+		{"آيس لاتيه", "ايس لاتية كوكونات", "اسبريسو ، حليب ، صوص كوكونات ، ثلج", 5000},
+
+		// فرابتشينو
+		{"فرابتشينو", "فرابتشينو كراميل", "كراميل ، حليب ، كريمة ، قهوة", 3500},
+		{"فرابتشينو", "فرابتشينو فانيلا", "فانيلا ، حليب ، كريمة ، قهوة", 4000},
+		{"فرابتشينو", "فرابتشينو نوتيلا", "نوتيلا ، حليب ، كريمة ، قهوة", 4000},
+		{"فرابتشينو", "فرابتشينو فستق", "فستق ، حليب ، كريمة ، قهوة", 4000},
+		{"فرابتشينو", "فرابتشينو كوكونات", "كوونات ، حليب ، كريمة ، قهوة", 3500},
+
+		// شيكات
+		{"شيكات", "ميلك شيك نوتلا", "حليب ، آيس كريم فانيليا ، نوتلا ، صوص نوتلا ، بندق مجروش", 5000},
+		{"شيكات", "ميلك شيك لوتوس", "حليب ، آيس كريم فانيليا ، لوتوس ، صوص لوتوس ، بسكويت لوتوس", 5000},
+		{"شيكات", "ميلك شيك فراوله", "حليب ، آيس كريم فانيليا ، فراولة ، صوص فراولة ، قطع فراولة", 4500},
+		{"شيكات", "ميلك شيك موز نوتلا", "حليب ، آيس كريم فانيليا ، موز ، نوتلا ، صوص نوتلا ، شرائح موز", 5000},
+		{"شيكات", "ميلك شيك موز فستق", "حليب ، آيس كريم فانيليا ، موز ، فستق ، صوص فستق ، فستق مجروش", 5000},
+
+		// موهيتو
+		{"موهيتو", "موهيتو", "نعناع طازج ، لايم ، شرابات سكر ، مياه فوازة", 3000},
+		{"موهيتو", "موهيتو فراوله", "نعناع طازج ، فراولة ، لايم ، شرابات سكر ، مياه فوازة", 3000},
+		{"موهيتو", "موهيتو خاص إن جي", "نعناع طازج ، توت أزرق ، زنجبيل ، شرابات سكر ، مياه فوازة", 3500},
+		{"موهيتو", "بلو موهيتو", "نعناع طازج ، شرابات بلو كوراكاو ، شرابات سكر ، مياه فوازة", 3500},
+		{"موهيتو", "مانكو موهيتو", "نعناع طازج ، مانجو ، لايم ، شرابات سكر ، مياه فوازة", 3500},
+		{"موهيتو", "كيوي موهيتو", "نعناع طازج ، كيوي ، لايم ، شرابات سكر ، مياه فوازة", 3500},
+
+		// آيس كريم
+		{"آيس كريم", "أفوكاتو", "بستني فانيل ، إسبريسو", 3000},
+		{"آيس كريم", "ثلاث سكويات", "اختياري من نكهات متنوعة", 2000},
+		{"آيس كريم", "اربع سكويات", "اختياري من نكهات متنوعة", 2500},
+
+		// كريب
+		{"كريب", "كريب نوتلا", "نوتلا ، صوص شوكولاتة ، فستق ، كريمة", 4000},
+		{"كريب", "كريب لوتوس", "صوص لوتوس ، بسكويت لوتوس ، كريمة", 4000},
+		{"كريب", "كريب دبي شوكلييت", "شوكليت دبي ، صوص شوكولاتة ، فستق ، كنافة ، كريمة", 4500},
+
+		// وافل
+		{"وافل", "وافل نوتلا", "نوتلا", 4000},
+		{"وافل", "وافل لوتوس", "لوتوس", 4000},
+		{"وافل", "وافل ايس كريم", "آيس كريم", 4500},
+
+		// VIP
+		{"VIP", "صحن فواكه", "فواكه طازجة متنوعة", 7000},
+		{"VIP", "ايس إن جي", "آيس كريم لوتوس خاص", 4500},
+		{"VIP", "معجون إن جي", "معجون خاص بالكافيه", 7000},
+		{"VIP", "كريب إن جي", "كريب خاص بالكافيه", 5500},
+		{"VIP", "ماشا إن جي", "ماتشا خاص بالكافيه", 5000},
 	}
 
 	for _, item := range items {
@@ -125,7 +217,6 @@ func seedMenuItems(db *sqlx.DB) error {
 			continue
 		}
 
-		// Check if exists
 		var count int
 		err := db.Get(&count, `SELECT COUNT(*) FROM menu_items WHERE name_ar = $1 AND category_id = $2`, item.NameAr, catID)
 		if err != nil {
@@ -137,13 +228,19 @@ func seedMenuItems(db *sqlx.DB) error {
 		}
 
 		_, err = db.Exec(
-			`INSERT INTO menu_items (category_id, name_ar, price) VALUES ($1, $2, $3)`,
-			catID, item.NameAr, item.Price,
+			`INSERT INTO menu_items (category_id, name_ar, description_ar, price) VALUES ($1, $2, $3, $4)`,
+			catID, item.NameAr, item.Description, item.Price,
 		)
 		if err != nil {
-			return fmt.Errorf("insert menu item '%s': %w", item.NameAr, err)
+			_, err = db.Exec(
+				`INSERT INTO menu_items (category_id, name_ar, price) VALUES ($1, $2, $3)`,
+				catID, item.NameAr, item.Price,
+			)
+			if err != nil {
+				return fmt.Errorf("insert menu item '%s': %w", item.NameAr, err)
+			}
 		}
-		fmt.Printf("  ✅ Created menu item: %s (%d fils)\n", item.NameAr, item.Price)
+		fmt.Printf("  ✅ Created menu item: %s\n", item.NameAr)
 	}
 
 	return nil
@@ -154,14 +251,18 @@ func seedInventoryItems(db *sqlx.DB) error {
 		NameAr     string
 		BaseUnitAr string
 		StockQty   int
-		UnitCost   int64 // fils per 1 base unit
+		UnitCost   int64
 	}{
-		{"حبوب قهوة", "غرام", 5000, 3},       // coffee beans — 3 fils/g
-		{"حليب", "مل", 20000, 1},              // milk — 1 fil/ml
-		{"سكر", "غرام", 10000, 1},             // sugar — 1 fil/g
-		{"أكواب ورقية", "قطعة", 500, 50},      // paper cups — 50 fils/piece
-		{"شوكولاتة", "غرام", 3000, 5},         // chocolate — 5 fils/g
-		{"فراولة مجمدة", "غرام", 2000, 4},     // frozen strawberry — 4 fils/g
+		{"حبوب قهوة", "غرام", 5000, 3},
+		{"حليب", "مل", 20000, 1},
+		{"سكر", "غرام", 10000, 1},
+		{"أكواب ورقية", "قطعة", 500, 50},
+		{"شوكولاتة", "غرام", 3000, 5},
+		{"فراولة مجمدة", "غرام", 2000, 4},
+		{"لوتوس", "غرام", 1000, 10},
+		{"نوتلا", "غرام", 1000, 8},
+		{"كريمة", "مل", 3000, 3},
+		{"فستق", "غرام", 1000, 15},
 	}
 
 	for _, item := range items {
@@ -182,152 +283,7 @@ func seedInventoryItems(db *sqlx.DB) error {
 		if err != nil {
 			return fmt.Errorf("insert inventory item '%s': %w", item.NameAr, err)
 		}
-		fmt.Printf("  ✅ Created inventory item: %s (%s)\n", item.NameAr, item.BaseUnitAr)
-	}
-
-	return nil
-}
-
-func seedRecipes(db *sqlx.DB) error {
-	// Helper to get ID by name
-	type idRow struct {
-		ID string `db:"id"`
-	}
-
-	getMenuItemID := func(nameAr string) (string, error) {
-		var row idRow
-		err := db.Get(&row, `SELECT id FROM menu_items WHERE name_ar = $1`, nameAr)
-		if err != nil {
-			return "", fmt.Errorf("menu item '%s' not found: %w", nameAr, err)
-		}
-		return row.ID, nil
-	}
-
-	getInventoryItemID := func(nameAr string) (string, error) {
-		var row idRow
-		err := db.Get(&row, `SELECT id FROM inventory_items WHERE name_ar = $1`, nameAr)
-		if err != nil {
-			return "", fmt.Errorf("inventory item '%s' not found: %w", nameAr, err)
-		}
-		return row.ID, nil
-	}
-
-	// Recipe definitions: menu item name → list of (inventory item name, quantity)
-	recipes := []struct {
-		MenuItemNameAr string
-		Ingredients    []struct {
-			InventoryNameAr string
-			Quantity        int
-		}
-	}{
-		{"اسبريسو", []struct {
-			InventoryNameAr string
-			Quantity        int
-		}{
-			{"حبوب قهوة", 18},    // 18g coffee
-			{"أكواب ورقية", 1},   // 1 cup
-		}},
-		{"لاتيه", []struct {
-			InventoryNameAr string
-			Quantity        int
-		}{
-			{"حبوب قهوة", 18},    // 18g coffee
-			{"حليب", 250},        // 250ml milk
-			{"أكواب ورقية", 1},   // 1 cup
-		}},
-		{"كابتشينو", []struct {
-			InventoryNameAr string
-			Quantity        int
-		}{
-			{"حبوب قهوة", 18},    // 18g coffee
-			{"حليب", 150},        // 150ml milk
-			{"أكواب ورقية", 1},   // 1 cup
-		}},
-		{"آيس لاتيه", []struct {
-			InventoryNameAr string
-			Quantity        int
-		}{
-			{"حبوب قهوة", 18},    // 18g coffee
-			{"حليب", 300},        // 300ml milk
-			{"أكواب ورقية", 1},   // 1 cup
-		}},
-		{"آيس أمريكانو", []struct {
-			InventoryNameAr string
-			Quantity        int
-		}{
-			{"حبوب قهوة", 18},    // 18g coffee
-			{"أكواب ورقية", 1},   // 1 cup
-		}},
-		{"سموذي فراولة", []struct {
-			InventoryNameAr string
-			Quantity        int
-		}{
-			{"فراولة مجمدة", 150}, // 150g frozen strawberry
-			{"حليب", 200},        // 200ml milk
-			{"سكر", 20},          // 20g sugar
-			{"أكواب ورقية", 1},   // 1 cup
-		}},
-		{"كيك الشوكولاتة", []struct {
-			InventoryNameAr string
-			Quantity        int
-		}{
-			{"شوكولاتة", 50},     // 50g chocolate
-			{"سكر", 30},          // 30g sugar
-		}},
-	}
-
-	for _, recipe := range recipes {
-		menuItemID, err := getMenuItemID(recipe.MenuItemNameAr)
-		if err != nil {
-			fmt.Printf("  ⚠ %v, skipping recipe\n", err)
-			continue
-		}
-
-		// Check if recipe already exists
-		var count int
-		err = db.Get(&count, `SELECT COUNT(*) FROM recipe_ingredients WHERE menu_item_id = $1`, menuItemID)
-		if err != nil {
-			return fmt.Errorf("check recipe: %w", err)
-		}
-		if count > 0 {
-			fmt.Printf("  ⏭ Recipe for '%s' already exists, skipping\n", recipe.MenuItemNameAr)
-			continue
-		}
-
-		for _, ing := range recipe.Ingredients {
-			inventoryItemID, err := getInventoryItemID(ing.InventoryNameAr)
-			if err != nil {
-				fmt.Printf("  ⚠ %v, skipping ingredient\n", err)
-				continue
-			}
-
-			_, err = db.Exec(
-				`INSERT INTO recipe_ingredients (menu_item_id, inventory_item_id, quantity) VALUES ($1, $2, $3)`,
-				menuItemID, inventoryItemID, ing.Quantity,
-			)
-			if err != nil {
-				return fmt.Errorf("insert recipe ingredient: %w", err)
-			}
-		}
-
-		// Recalculate auto-cost
-		var cost *int64
-		err = db.Get(&cost,
-			`SELECT SUM(ri.quantity::BIGINT * ii.unit_cost)
-			 FROM recipe_ingredients ri
-			 JOIN inventory_items ii ON ii.id = ri.inventory_item_id
-			 WHERE ri.menu_item_id = $1`, menuItemID)
-		if err != nil {
-			return fmt.Errorf("calculate auto cost: %w", err)
-		}
-		if cost != nil {
-			_, err = db.Exec(`UPDATE menu_items SET cached_auto_cost = $1 WHERE id = $2`, *cost, menuItemID)
-			if err != nil {
-				return fmt.Errorf("update cached auto cost: %w", err)
-			}
-		}
-
-		fmt.Printf("  ✅ Created recipe for: %s (%d ingredients)\n", recipe.MenuItemNameAr, len(recipe.Ingredients))
+		fmt.Printf("  ✅ Created inventory item: %s\n", item.NameAr)
 	}
 
 	return nil

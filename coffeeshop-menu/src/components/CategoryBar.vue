@@ -40,9 +40,7 @@ const emit = defineEmits<{
   padding: var(--gap-sm) 0;
   scrollbar-width: none;
 }
-.category-bar::-webkit-scrollbar {
-  display: none;
-}
+.category-bar::-webkit-scrollbar { display: none; }
 
 .cat-btn {
   white-space: nowrap;
@@ -57,15 +55,14 @@ const emit = defineEmits<{
   cursor: pointer;
   transition: all var(--transition-fast);
 }
-
 .cat-btn:hover {
   color: var(--color-text);
   border-color: var(--color-surface-3);
 }
-
 .cat-btn.active {
-  background: var(--color-accent);
-  color: var(--color-bg);
+  background: linear-gradient(135deg, #c8960a, #e0aa12);
+  color: #0a1f12;
   border-color: var(--color-accent);
+  box-shadow: 0 2px 12px rgba(200,150,10,0.3);
 }
 </style>
