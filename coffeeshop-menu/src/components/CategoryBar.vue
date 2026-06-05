@@ -40,12 +40,14 @@ const emit = defineEmits<{
   padding: var(--gap-sm) 0;
   scrollbar-width: none;
 }
-.category-bar::-webkit-scrollbar { display: none; }
+.category-bar::-webkit-scrollbar {
+  display: none;
+}
 
 .cat-btn {
   white-space: nowrap;
   padding: var(--gap-sm) var(--gap-lg);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-full);
   background: var(--color-surface);
   color: var(--color-text-muted);
@@ -55,14 +57,16 @@ const emit = defineEmits<{
   cursor: pointer;
   transition: all var(--transition-fast);
 }
+
 .cat-btn:hover {
-  color: var(--color-text);
-  border-color: var(--color-surface-3);
-}
-.cat-btn.active {
-  background: linear-gradient(135deg, #c8960a, #e0aa12);
-  color: #0a1f12;
   border-color: var(--color-accent);
-  box-shadow: 0 2px 12px rgba(200,150,10,0.3);
+  color: var(--color-accent);
+}
+
+.cat-btn.active {
+  background: var(--color-accent);
+  color: #ffffff;
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 10px rgba(139, 94, 60, 0.3);
 }
 </style>
