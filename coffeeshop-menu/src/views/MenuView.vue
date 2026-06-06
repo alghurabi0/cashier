@@ -18,6 +18,11 @@ const { itemCount, addItem } = useCart()
 
 const selectedCategoryId = ref<string | null>(null)
 
+const selectedCategoryName = computed(() => {
+  if (!selectedCategoryId.value) return 'القائمة الكاملة'
+  return categories.value.find(c => c.id === selectedCategoryId.value)?.name_ar ?? 'القائمة'
+})
+
 const filteredItems = computed(() => {
   if (!selectedCategoryId.value) return menuItems.value
   return menuItems.value.filter(i => i.category_id === selectedCategoryId.value)
@@ -33,36 +38,41 @@ function onAddItem(menuItemId: string, nameAr: string, price: number) {
 </script>
 
 <template>
-  <div class="menu-view">
-    <header class="menu-header">
-      <div class="header-logo">
-        <div class="logo-circle">
-          <span class="logo-text">NJ</span>
-        </div>
-        <div class="header-titles">
-          <h1 class="shop-name">NJ Coffee</h1>
-          <p class="shop-tagline">اختر ما يحلو لك ☕</p>
+  <div class="menu-view" dir="rtl">
+
+    <section class="hero">
+      <img class="hero-bg" src="https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=800&q=80" alt="coffee shop" />
+      <div class="hero-overlay" />
+      <div class="hero-content">
+        <div class="hero-logo">NJ</div>
+        <h1 class="hero-title">NJ Coffee</h1>
+        <p class="hero-tagline">تجربة قهوة لا تُنسى</p>
+        <div class="hero-table-badge">
+          <span>🪑</span>
+          <span>طاولة {{ tableNumber }}</span>
         </div>
       </div>
-      <div class="table-badge">
-        <span>🪑</span>
-        <span>طاولة {{ tableNumber }}</span>
+    </section>
+
+    <CategoryBar
+      :categories="categories"
+      :selected-id="selectedCategoryId"
+      @select="selectedCategoryId = $event"
+    />
+
+    <main class="menu-content">
+      <div class="section-header" v-if="!isLoading">
+        <span class="section-deco">—</span>
+        <span class="section-title">{{ selectedCategoryName }}</span>
+        <span class="section-deco">—</span>
       </div>
-    </header>
 
-    <div class="menu-content">
-      <CategoryBar
-        :categories="categories"
-        :selected-id="selectedCategoryId"
-        @select="selectedCategoryId = $event"
-      />
-
-      <div v-if="isLoading" class="loading">
-        <div class="loading-ring"></div>
+      <div v-if="isLoading" class="loading-state">
+        <div class="loading-ring" />
         <span>جاري التحميل...</span>
       </div>
 
-      <div v-else class="menu-grid">
+      <div v-else-if="filteredItems.length > 0" class="items-list">
         <MenuItemCard
           v-for="item in filteredItems"
           :key="item.id"
@@ -71,153 +81,176 @@ function onAddItem(menuItemId: string, nameAr: string, price: number) {
         />
       </div>
 
-      <div v-if="!isLoading && filteredItems.length === 0" class="empty">
-        لا توجد منتجات
+      <div v-else class="empty-state">
+        <span>🍃</span>
+        <p>لا توجد منتجات في هذا القسم</p>
       </div>
-    </div>
+    </main>
 
-    <button
-      v-if="itemCount > 0"
-      class="fab-cart"
-      @click="emit('open-cart')"
-    >
-      <span>🛒</span>
-      <span class="fab-count">{{ itemCount }}</span>
-      <span>عرض السلة</span>
-    </button>
+    <Transition name="fab">
+      <button v-if="itemCount > 0" class="fab-cart" @click="emit('open-cart')">
+        <span>🛒</span>
+        <span class="fab-label">عرض السلة</span>
+        <span class="fab-count">{{ itemCount }}</span>
+      </button>
+    </Transition>
+
   </div>
 </template>
 
 <style scoped>
 .menu-view {
   min-height: 100dvh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
   display: flex;
   flex-direction: column;
-  background: var(--color-bg);
+  padding-bottom: 100px;
 }
 
-.menu-header {
-  padding: var(--gap-lg);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  box-shadow: 0 2px 12px rgba(139, 94, 60, 0.08);
-}
-
-.header-logo {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-md);
-}
-
-.logo-circle {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.hero {
+  position: relative;
+  height: 230px;
+  overflow: hidden;
   flex-shrink: 0;
 }
 
-.logo-text {
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: #ffffff;
-  letter-spacing: 1px;
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+  filter: brightness(0.55);
 }
 
-.header-titles {
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(13,13,13,0.3) 0%, rgba(13,13,13,0.55) 60%, rgba(13,13,13,0.95) 100%);
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 0 20px;
 }
 
-.shop-name {
-  font-size: 1.3rem;
+.hero-logo {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
   font-weight: 900;
-  color: var(--color-accent);
+  color: #0d0d0d;
+  box-shadow: 0 0 24px rgba(201,168,76,0.55);
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+}
+
+.hero-title {
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: #c9a84c;
+  letter-spacing: 2px;
+  margin: 0;
   line-height: 1.1;
 }
 
-.shop-tagline {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  margin-top: 2px;
+.hero-tagline {
+  font-size: 0.88rem;
+  color: rgba(240,230,211,0.78);
+  margin: 0;
 }
 
-.table-badge {
+.hero-table-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 6px 16px;
+  background: rgba(201,168,76,0.15);
+  border: 1px solid rgba(201,168,76,0.4);
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #c9a84c;
+}
+
+.section-header {
   display: flex;
   align-items: center;
-  gap: var(--gap-xs);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border);
-  padding: var(--gap-xs) var(--gap-md);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 20px 6px;
+}
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.section-deco {
   color: var(--color-accent);
+  opacity: 0.8;
 }
 
 .menu-content {
   flex: 1;
-  padding: var(--gap-md) var(--gap-md) 100px;
   display: flex;
   flex-direction: column;
-  gap: var(--gap-md);
 }
 
-.menu-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--gap-md);
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 14px 16px;
 }
 
-@media (min-width: 600px) {
-  .menu-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 900px) {
-  .menu-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-.loading {
+.loading-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--gap-md);
-  padding: var(--gap-xl) 0;
+  gap: 14px;
+  padding: 60px 0;
   color: var(--color-text-muted);
 }
 
 .loading-ring {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--color-surface-3);
-  border-top-color: var(--color-accent);
+  width: 42px;
+  height: 42px;
+  border: 3px solid rgba(201,168,76,0.2);
+  border-top-color: #c9a84c;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-.empty {
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: var(--color-text-muted);
   text-align: center;
-  padding: var(--gap-xl);
-  color: var(--color-text-dim);
-  font-size: var(--font-size-lg);
+  font-size: 2rem;
 }
 
 .fab-cart {
@@ -227,40 +260,38 @@ function onAddItem(menuItemId: string, nameAr: string, price: number) {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: var(--gap-sm);
-  padding: 14px 28px;
-  background: var(--color-accent);
-  color: #ffffff;
+  gap: 10px;
+  padding: 15px 28px;
+  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  color: #0d0d0d;
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: 50px;
   font-family: var(--font-family);
-  font-size: var(--font-size-md);
+  font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(139, 94, 60, 0.4);
-  animation: fabSlideUp 0.3s ease;
+  box-shadow: 0 8px 32px rgba(201,168,76,0.5);
   z-index: 100;
+  white-space: nowrap;
 }
 
-.fab-cart:active {
-  transform: translateX(-50%) scale(0.95);
-}
-
-@keyframes fabSlideUp {
-  from { transform: translateX(-50%) translateY(100px); opacity: 0; }
-  to   { transform: translateX(-50%) translateY(0); opacity: 1; }
-}
+.fab-cart:active { transform: translateX(-50%) scale(0.96); }
+.fab-label { flex: 1; }
 
 .fab-count {
-  background: #ffffff;
-  color: var(--color-accent);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  background: #0d0d0d;
+  color: #c9a84c;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--font-size-sm);
-  font-weight: 800;
+  font-size: 0.8rem;
+  font-weight: 900;
+  padding: 0 6px;
 }
+
+.fab-enter-active, .fab-leave-active { transition: opacity 0.25s ease, transform 0.3s ease; }
+.fab-enter-from, .fab-leave-to { opacity: 0; transform: translateX(-50%) translateY(60px); }
 </style>

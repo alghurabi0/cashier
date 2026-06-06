@@ -11,7 +11,6 @@ const MAX_PIN = 6
 function onDigit(d: string) {
   if (pinDigits.value.length >= MAX_PIN) return
   pinDigits.value.push(d)
-  // Auto-submit when 4+ digits entered and user presses enter via keypad
 }
 
 function onBackspace() {
@@ -33,23 +32,24 @@ async function onSubmit() {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key >= '0' && e.key <= '9') {
-    onDigit(e.key)
-  } else if (e.key === 'Backspace') {
-    onBackspace()
-  } else if (e.key === 'Enter') {
-    onSubmit()
-  }
+  if (e.key >= '0' && e.key <= '9') onDigit(e.key)
+  else if (e.key === 'Backspace') onBackspace()
+  else if (e.key === 'Enter') onSubmit()
 }
 </script>
 
 <template>
-  <div class="login-screen" @keydown="onKeydown" tabindex="0" ref="loginRef">
+  <div class="login-screen" @keydown="onKeydown" tabindex="0">
+    <video class="bg-video" autoplay muted loop playsinline>
+      <source src="/bg-video.mp4" type="video/mp4" />
+    </video>
+    <div class="bg-overlay"></div>
+
     <div class="login-card" :class="{ shake: shaking }">
       <div class="login-header">
-        <span class="login-icon">☕</span>
-        <h1 class="login-title">المقهى</h1>
-        <p class="login-subtitle">أدخل رمز PIN</p>
+        <div class="logo-circle">NJ</div>
+        <h1 class="login-title">NJ Coffee</h1>
+        <p class="login-subtitle">أدخل رمز PIN للدخول</p>
       </div>
 
       <div class="pin-dots">
@@ -77,21 +77,45 @@ function onKeydown(e: KeyboardEvent) {
 
 <style scoped>
 .login-screen {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
-  background: var(--color-bg);
+  overflow: hidden;
   outline: none;
 }
 
+.bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1;
+}
+
 .login-card {
+  position: relative;
+  z-index: 2;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--gap-lg);
-  padding: var(--gap-xl);
+  gap: 24px;
+  padding: 40px 48px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
 }
 
 .login-card.shake {
@@ -111,88 +135,99 @@ function onKeydown(e: KeyboardEvent) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--gap-sm);
+  gap: 10px;
 }
 
-.login-icon {
-  font-size: 3.5rem;
+.logo-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c8960a, #e0aa12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #0a1f12;
+  box-shadow: 0 4px 20px rgba(200, 150, 10, 0.5);
 }
 
 .login-title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-extra);
+  font-size: 2rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 2px;
 }
 
 .login-subtitle {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-md);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
 }
 
 .pin-dots {
   display: flex;
-  gap: var(--gap-md);
+  gap: 12px;
 }
 
 .pin-dot {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 2px solid var(--color-surface-3);
-  transition: all var(--transition-fast);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  transition: all 0.15s ease;
 }
 
 .pin-dot.filled {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  transform: scale(1.15);
+  background: #c8960a;
+  border-color: #c8960a;
+  transform: scale(1.2);
+  box-shadow: 0 0 10px rgba(200, 150, 10, 0.6);
 }
 
 .login-error {
-  color: var(--color-danger);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semi);
+  color: #ff6b6b;
+  font-size: 0.85rem;
 }
 
 .pin-pad {
   display: grid;
   grid-template-columns: repeat(3, 64px);
-  gap: var(--gap-sm);
+  gap: 10px;
 }
 
 .pad-btn {
   width: 64px;
   height: 56px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
   font-family: var(--font-family);
   font-size: 1.3rem;
-  font-weight: var(--font-weight-bold);
+  font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
   user-select: none;
+}
+
+.pad-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .pad-btn:active {
   transform: scale(0.92);
-  background: var(--color-surface-2);
-}
-
-.pad-btn:hover {
-  border-color: var(--color-surface-3);
 }
 
 .pad-backspace {
-  font-size: 1.1rem;
-  color: var(--color-text-muted);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .pad-enter {
-  background: var(--color-accent);
-  color: var(--color-bg);
-  border-color: var(--color-accent);
+  background: linear-gradient(135deg, #c8960a, #e0aa12);
+  color: #0a1f12;
+  border-color: transparent;
   font-size: 1.4rem;
+  font-weight: 900;
 }
 
 .pad-enter:disabled {

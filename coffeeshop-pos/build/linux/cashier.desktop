@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=cashier
+Exec=cashier
+Icon=cashier
+Categories=Development;
+Terminal=false
+Keywords=wails
+Version=1.0
+StartupNotify=false

@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
 
 :root {
-  --color-bg: #faf6f1;
-  --color-surface: #ffffff;
-  --color-surface-2: #f5ede0;
-  --color-surface-3: #ede0cc;
-  --color-accent: #8b5e3c;
-  --color-accent-hover: #6f4422;
-  --color-accent-light: rgba(139, 94, 60, 0.1);
-  --color-text: #2c1a0e;
-  --color-text-muted: #8b7355;
-  --color-text-dim: #b8a090;
-  --color-border: #e8d8c4;
-  --color-border-brown: rgba(139, 94, 60, 0.25);
-  --color-price: #8b5e3c;
+  --color-bg: #0d0d0d;
+  --color-surface: #1a1a1a;
+  --color-surface-2: #222222;
+  --color-surface-3: #2a2a2a;
+  --color-accent: #c9a84c;
+  --color-accent-hover: #e0c070;
+  --color-accent-light: rgba(201, 168, 76, 0.12);
+  --color-text: #f0e6d0;
+  --color-text-muted: #9a8a6a;
+  --color-text-dim: #5a4a3a;
+  --color-border: #2a2a2a;
+  --color-border-gold: rgba(201, 168, 76, 0.25);
+  --color-price: #c9a84c;
   --color-success: #4caf50;
   --color-danger: #e74c3c;
   --color-warning: #f39c12;
@@ -94,7 +94,7 @@ body {
 
 .btn-primary {
   background: var(--color-accent);
-  color: #ffffff;
+  color: #0d0d0d;
 }
 
 .btn-primary:hover {

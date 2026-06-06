@@ -9,6 +9,26 @@ defineProps<{
 const emit = defineEmits<{
   select: [id: string | null]
 }>()
+
+const emojiMap: Record<string, string> = {
+  'مشروبات ساخنة': '☕',
+  'شاي': '🍵',
+  'لاتيه': '☕',
+  'كابتشينو': '☕',
+  'آيس درنك': '🧊',
+  'آيس لاتيه': '🥛',
+  'فرابتشينو': '🥤',
+  'شيكات': '🥛',
+  'موهيتو': '🍃',
+  'آيس كريم': '🍦',
+  'كريب': '🥞',
+  'وافل': '🧇',
+  'VIP': '⭐',
+}
+
+function getEmoji(name: string): string {
+  return emojiMap[name] ?? '🍽️'
+}
 </script>
 
 <template>
@@ -18,7 +38,8 @@ const emit = defineEmits<{
       :class="{ active: selectedId === null }"
       @click="emit('select', null)"
     >
-      الكل
+      <span class="cat-emoji">🏠</span>
+      <span class="cat-label">الكل</span>
     </button>
     <button
       v-for="cat in categories"
@@ -27,7 +48,8 @@ const emit = defineEmits<{
       :class="{ active: selectedId === cat.id }"
       @click="emit('select', cat.id)"
     >
-      {{ cat.name_ar }}
+      <span class="cat-emoji">{{ getEmoji(cat.name_ar) }}</span>
+      <span class="cat-label">{{ cat.name_ar }}</span>
     </button>
   </div>
 </template>
@@ -35,27 +57,34 @@ const emit = defineEmits<{
 <style scoped>
 .category-bar {
   display: flex;
-  gap: var(--gap-sm);
+  gap: 8px;
   overflow-x: auto;
-  padding: var(--gap-sm) 0;
+  padding: 14px 14px;
   scrollbar-width: none;
-}
-.category-bar::-webkit-scrollbar {
-  display: none;
+  background: var(--color-bg);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 
+.category-bar::-webkit-scrollbar { display: none; }
+
 .cat-btn {
-  white-space: nowrap;
-  padding: var(--gap-sm) var(--gap-lg);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-full);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 50px;
   background: var(--color-surface);
   color: var(--color-text-muted);
   font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .cat-btn:hover {
@@ -64,9 +93,16 @@ const emit = defineEmits<{
 }
 
 .cat-btn.active {
-  background: var(--color-accent);
-  color: #ffffff;
-  border-color: var(--color-accent);
-  box-shadow: 0 2px 10px rgba(139, 94, 60, 0.3);
+  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  color: #0d0d0d;
+  border-color: transparent;
+  box-shadow: 0 3px 12px rgba(201, 168, 76, 0.35);
+}
+
+.cat-emoji { font-size: 1.1rem; }
+
+.cat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 </style>
