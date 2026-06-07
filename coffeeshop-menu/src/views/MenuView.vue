@@ -64,6 +64,11 @@ function selectLang(l: Lang) {
   lang.value = l
   showLangPicker.value = false
 }
+
+function openWhatsapp() {
+  const num = import.meta.env.VITE_WHATSAPP
+  if (num) window.open(`https://wa.me/${num}`, '_blank')
+}
 </script>
 
 <template>
@@ -156,7 +161,7 @@ function selectLang(l: Lang) {
         <span class="nav-icon">🌐</span>
         <span class="nav-label">{{ tr.language }}</span>
       </button>
-      <button class="nav-btn">
+      <button class="nav-btn" @click="openWhatsapp">
         <span class="nav-icon">📞</span>
         <span class="nav-label">{{ tr.contact }}</span>
       </button>
@@ -347,7 +352,6 @@ function selectLang(l: Lang) {
   border-radius: 14px; color: #f0e6d3;
   font-family: 'Cairo', sans-serif; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
 }
-
 .lang-btn.active { background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.4); color: #c9a84c; }
 .lang-check { color: #c9a84c; font-size: 1.1rem; }
 
