@@ -19,187 +19,202 @@ function timeAgo(dateStr: string): string {
   const diffMs = now.getTime() - date.getTime()
   const mins = Math.floor(diffMs / 60000)
   if (mins < 1) return 'الآن'
-  if (mins < 60) return `${mins} دقيقة`
+  if (mins < 60) return `منذ ${mins} دقيقة`
   const hours = Math.floor(mins / 60)
-  return `${hours} ساعة`
+  return `منذ ${hours} ساعة`
 }
 </script>
 
 <template>
-  <div class="web-order-card" :class="status">
-    <div class="order-header">
-      <span class="order-number">#{{ order.order_number }}</span>
-      <span class="table-badge">🪑 طاولة {{ order.table_number }}</span>
+  <div class="order-card" :class="status">
+
+    <div class="card-header">
+      <div class="order-num">#{{ order.order_number }}</div>
+      <div class="table-badge">🪑 طاولة {{ order.table_number }}</div>
+      <div class="order-time">{{ timeAgo(order.created_at) }}</div>
     </div>
 
-    <div class="order-time">{{ timeAgo(order.created_at) }}</div>
-
-    <div class="order-items">
-      <div v-for="item in order.items" :key="item.id" class="order-line">
-        <span class="line-qty">×{{ item.quantity }}</span>
-        <span class="line-name">{{ item.name_ar_snapshot }}</span>
-        <span class="line-total">{{ formatPrice(item.line_total) }}</span>
+    <div class="card-items">
+      <div v-for="item in order.items" :key="item.id" class="item-row">
+        <span class="item-qty">×{{ item.quantity }}</span>
+        <span class="item-name">{{ item.name_ar_snapshot }}</span>
+        <span class="item-price">{{ formatPrice(item.line_total) }}</span>
       </div>
     </div>
 
-    <div class="order-footer">
-      <span class="order-total">{{ formatPrice(order.total) }} <small>د.ع</small></span>
-
-      <div class="order-actions" v-if="status === 'pending'">
-        <button class="btn btn-accept" @click="emit('accept', order.id)" title="قبول">✓ قبول</button>
-        <button class="btn btn-reject" @click="emit('reject', order.id)" title="رفض">✗ رفض</button>
+    <div class="card-footer">
+      <div class="total-wrap">
+        <span class="total-label">المجموع</span>
+        <span class="total-amount">{{ formatPrice(order.total) }} <small>د.ع</small></span>
       </div>
 
-      <div class="order-actions" v-else-if="status === 'accepted'">
-        <button class="btn btn-complete" @click="emit('complete', order.id)" title="اكتمل">✓ اكتمل</button>
+      <div class="actions" v-if="status === 'pending'">
+        <button class="action-btn reject-btn" @click="emit('reject', order.id)">✗ رفض</button>
+        <button class="action-btn accept-btn" @click="emit('accept', order.id)">✓ قبول</button>
+      </div>
+
+      <div class="actions" v-else-if="status === 'accepted'">
+        <button class="action-btn complete-btn" @click="emit('complete', order.id)">✓ اكتمل</button>
       </div>
     </div>
+
   </div>
 </template>
 
 <style scoped>
-.web-order-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--gap-md);
+.order-card {
+  background: #1a1a1a;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: var(--gap-sm);
-  transition: all var(--transition-fast);
+  gap: 10px;
+  transition: all 0.2s ease;
 }
 
-.web-order-card.pending {
-  border-right: 3px solid var(--color-warning);
-  animation: pulseGlow 2s infinite;
+.order-card.pending {
+  border-right: 3px solid #f39c12;
+  animation: pulseGlow 2.5s infinite;
 }
 
-.web-order-card.accepted {
-  border-right: 3px solid var(--color-success);
+.order-card.accepted {
+  border-right: 3px solid #27ae60;
 }
 
-.web-order-card.completed {
-  opacity: 0.7;
-  border-right: 3px solid var(--color-text-dim);
+.order-card.completed {
+  opacity: 0.55;
+  border-right: 3px solid #444;
 }
 
 @keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(243, 156, 18, 0); }
-  50% { box-shadow: 0 0 12px 2px rgba(243, 156, 18, 0.15); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(243,156,18,0); }
+  50% { box-shadow: 0 0 16px 2px rgba(243,156,18,0.12); }
 }
 
-.order-header {
+.card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
-.order-number {
-  font-weight: var(--font-weight-extra);
-  font-size: var(--font-size-lg);
-  font-variant-numeric: tabular-nums;
+.order-num {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #c9a84c;
+  letter-spacing: 1px;
 }
 
 .table-badge {
-  background: var(--color-surface-2);
-  padding: 2px 10px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semi);
+  background: rgba(201,168,76,0.1);
+  border: 1px solid rgba(201,168,76,0.2);
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #c9a84c;
 }
 
 .order-time {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-dim);
+  margin-right: auto;
+  font-size: 0.68rem;
+  color: #555;
 }
 
-.order-items {
+.card-items {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: var(--gap-sm) 0;
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-.order-line {
+.item-row {
   display: flex;
-  align-items: baseline;
-  gap: var(--gap-sm);
-  font-size: var(--font-size-sm);
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
 }
 
-.line-qty {
-  color: var(--color-accent);
-  font-weight: var(--font-weight-bold);
+.item-qty {
+  color: #c9a84c;
+  font-weight: 800;
   min-width: 28px;
 }
 
-.line-name {
+.item-name {
   flex: 1;
+  color: #f0e6d3;
 }
 
-.line-total {
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
+.item-price {
+  color: #666;
+  font-size: 0.75rem;
 }
 
-.order-footer {
+.card-footer {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
 
-.order-total {
-  font-weight: var(--font-weight-extra);
-  font-size: var(--font-size-lg);
-}
-
-.order-total small {
-  font-size: var(--font-size-xs);
-  opacity: 0.7;
-}
-
-.order-actions {
+.total-wrap {
   display: flex;
-  gap: var(--gap-sm);
+  flex-direction: column;
+  gap: 1px;
 }
 
-.btn {
-  padding: var(--gap-xs) var(--gap-md);
+.total-label {
+  font-size: 0.65rem;
+  color: #555;
+}
+
+.total-amount {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #f0e6d3;
+}
+
+.total-amount small {
+  font-size: 0.65rem;
+  opacity: 0.6;
+  margin-right: 2px;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+}
+
+.action-btn {
+  padding: 7px 16px;
   border: none;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-bold);
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.2s;
 }
 
-.btn-accept {
-  background: var(--color-success);
-  color: white;
+.accept-btn {
+  background: #27ae60;
+  color: #fff;
 }
+.accept-btn:hover { filter: brightness(1.15); }
 
-.btn-accept:hover {
-  filter: brightness(1.1);
+.reject-btn {
+  background: rgba(231,76,60,0.12);
+  color: #e74c3c;
+  border: 1px solid rgba(231,76,60,0.25);
 }
+.reject-btn:hover { background: rgba(231,76,60,0.2); }
 
-.btn-reject {
-  background: var(--color-surface-2);
-  color: var(--color-danger);
+.complete-btn {
+  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  color: #0d0d0d;
+  box-shadow: 0 4px 14px rgba(201,168,76,0.3);
 }
-
-.btn-reject:hover {
-  background: rgba(231, 76, 60, 0.15);
-}
-
-.btn-complete {
-  background: var(--color-accent);
-  color: white;
-}
-
-.btn-complete:hover {
-  filter: brightness(1.1);
-}
+.complete-btn:hover { filter: brightness(1.1); }
 </style>
