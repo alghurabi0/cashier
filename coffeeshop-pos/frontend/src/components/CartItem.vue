@@ -15,21 +15,17 @@ const emit = defineEmits<{
 
 <template>
   <div class="cart-item">
-    <div class="cart-item-info">
-      <span class="cart-item-name">{{ item.name_ar }}</span>
-      <span class="cart-item-price text-muted text-sm">
-        {{ formatPrice(item.price) }} × {{ item.quantity }}
-      </span>
+    <div class="item-info">
+      <span class="item-name">{{ item.name_ar }}</span>
+      <span class="item-unit">{{ formatPrice(item.price) }} / قطعة</span>
     </div>
-    <div class="cart-item-controls">
-      <div class="qty-controls">
-        <button class="btn btn-icon btn-ghost" @click="emit('decrement', item.menu_item_id)">−</button>
-        <span class="qty-value">{{ item.quantity }}</span>
-        <button class="btn btn-icon btn-ghost" @click="emit('increment', item.menu_item_id)">+</button>
-      </div>
-      <span class="cart-item-total">{{ formatPrice(item.price * item.quantity) }}</span>
+    <div class="item-controls">
+      <button class="qty-btn" @click="emit('decrement', item.menu_item_id)">−</button>
+      <span class="qty-val">{{ item.quantity }}</span>
+      <button class="qty-btn" @click="emit('increment', item.menu_item_id)">+</button>
     </div>
-    <button class="remove-btn" @click="emit('remove', item.menu_item_id)" title="حذف">✕</button>
+    <span class="item-total">{{ formatPrice(item.price * item.quantity) }}</span>
+    <button class="remove-btn" @click="emit('remove', item.menu_item_id)">✕</button>
   </div>
 </template>
 
@@ -37,89 +33,107 @@ const emit = defineEmits<{
 .cart-item {
   display: flex;
   align-items: center;
-  gap: var(--gap-md);
-  padding: var(--gap-md);
-  background: var(--color-surface);
-  border-radius: var(--radius-md);
+  gap: 10px;
+  padding: 10px 12px;
+  background: #1e1e1e;
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 12px;
   position: relative;
-  transition: background var(--transition-fast);
+  transition: background 0.15s ease;
 }
 
 .cart-item:hover {
-  background: var(--color-surface-2);
+  background: #242424;
+  border-color: rgba(201,168,76,0.12);
 }
 
-.cart-item-info {
+.item-info {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1;
-  min-width: 0;
 }
 
-.cart-item-name {
-  font-weight: var(--font-weight-semi);
-  font-size: var(--font-size-md);
+.item-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #e8dcc8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.cart-item-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-md);
+.item-unit {
+  font-size: 0.7rem;
+  color: #555;
 }
 
-.qty-controls {
+.item-controls {
   display: flex;
   align-items: center;
-  gap: var(--gap-xs);
-  background: var(--color-bg);
-  border-radius: var(--radius-sm);
-  padding: 2px;
+  gap: 4px;
+  background: #111;
+  border-radius: 8px;
+  padding: 3px;
 }
 
-.qty-value {
-  min-width: 28px;
+.qty-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.qty-btn:hover {
+  background: #222;
+  color: #c9a84c;
+}
+
+.qty-val {
+  min-width: 24px;
   text-align: center;
-  font-weight: var(--font-weight-bold);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #f0e6d3;
   font-variant-numeric: tabular-nums;
 }
 
-.cart-item-total {
-  font-weight: var(--font-weight-bold);
+.item-total {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #c9a84c;
   font-variant-numeric: tabular-nums;
-  min-width: 60px;
+  min-width: 56px;
   text-align: left;
-  color: var(--color-accent);
 }
 
 .remove-btn {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   border: none;
-  background: none;
-  color: var(--color-text-dim);
+  background: transparent;
+  color: #444;
   cursor: pointer;
-  font-size: var(--font-size-xs);
+  font-size: 0.7rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
-.cart-item:hover .remove-btn {
-  opacity: 1;
-}
-
-.remove-btn:hover {
-  color: var(--color-danger);
-  background: rgba(231, 76, 60, 0.15);
-}
+.cart-item:hover .remove-btn { opacity: 1; }
+.remove-btn:hover { color: #e74c3c; background: rgba(231,76,60,0.12); }
 </style>
