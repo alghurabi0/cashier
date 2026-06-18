@@ -11,17 +11,10 @@ const showForm = ref(false)
 const editingItem = ref<InventoryItem | null>(null)
 const confirmDeleteId = ref<string | null>(null)
 
-function openCreate() {
-  editingItem.value = null
-  showForm.value = true
-}
+function openCreate() { editingItem.value = null; showForm.value = true }
+function openEdit(item: InventoryItem) { editingItem.value = item; showForm.value = true }
 
-function openEdit(item: InventoryItem) {
-  editingItem.value = item
-  showForm.value = true
-}
-
-async function onSave(data: { name_ar: string; base_unit_ar: string; stock_qty: number; low_stock_threshold: number; unit_cost: number }) {
+async function onSave(data: any) {
   try {
     if (editingItem.value) {
       await updateInventoryItem(editingItem.value.id, data.name_ar, data.base_unit_ar, data.stock_qty, data.low_stock_threshold, data.unit_cost)
@@ -29,19 +22,13 @@ async function onSave(data: { name_ar: string; base_unit_ar: string; stock_qty: 
       await createInventoryItem(data.name_ar, data.base_unit_ar, data.stock_qty, data.low_stock_threshold, data.unit_cost)
     }
     showForm.value = false
-  } catch (err) {
-    console.error('Save failed:', err)
-  }
+  } catch (err) { console.error(err) }
 }
 
 async function onConfirmDelete() {
   if (!confirmDeleteId.value) return
-  try {
-    await deleteInventoryItem(confirmDeleteId.value)
-    confirmDeleteId.value = null
-  } catch (err) {
-    console.error('Delete failed:', err)
-  }
+  try { await deleteInventoryItem(confirmDeleteId.value); confirmDeleteId.value = null }
+  catch (err) { console.error(err) }
 }
 
 function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
@@ -53,19 +40,19 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
 </script>
 
 <template>
-  <div class="inventory-table">
-    <div class="table-toolbar">
-      <h2 class="section-title">المواد الخام</h2>
-      <button class="btn btn-primary" @click="openCreate">+ إضافة مادة</button>
+  <div class="inv-table">
+    <div class="toolbar">
+      <h2 class="section-title">🧪 المواد الخام</h2>
+      <button class="add-btn" @click="openCreate">+ إضافة مادة</button>
     </div>
 
-    <div v-if="inventoryItems.length === 0 && !isLoading" class="empty-state">
-      <span class="empty-icon">🧪</span>
-      <span class="empty-text">لا توجد مواد خام</span>
-      <button class="btn btn-primary" @click="openCreate">أضف مادة جديدة</button>
+    <div v-if="inventoryItems.length === 0 && !isLoading" class="empty">
+      <span>🧪</span>
+      <p>لا توجد مواد خام</p>
+      <button class="add-btn" @click="openCreate">أضف مادة جديدة</button>
     </div>
 
-    <table v-else class="data-table">
+    <table v-else class="table">
       <thead>
         <tr>
           <th>الاسم</th>
@@ -78,39 +65,34 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
       </thead>
       <tbody>
         <tr v-for="item in inventoryItems" :key="item.id">
-          <td class="cell-name">{{ item.name_ar }}</td>
-          <td class="cell-unit">{{ item.base_unit_ar }}</td>
+          <td class="name-cell">{{ item.name_ar }}</td>
+          <td class="muted">{{ item.base_unit_ar }}</td>
           <td>
-            <span class="stock-badge" :class="stockStatus(item)">
+            <span class="stock-chip" :class="stockStatus(item)">
               {{ item.stock_qty.toLocaleString() }}
+              <span v-if="stockStatus(item) === 'low'"> ⚠️</span>
+              <span v-if="stockStatus(item) === 'critical'"> 🔴</span>
             </span>
           </td>
-          <td class="text-muted">{{ item.low_stock_threshold.toLocaleString() }}</td>
-          <td>{{ formatPrice(item.unit_cost) }} <small class="text-muted">د.ع</small></td>
-          <td class="cell-actions">
-            <button class="btn btn-ghost btn-icon" title="تعديل" @click="openEdit(item)">✏️</button>
-            <button class="btn btn-ghost btn-icon" title="حذف" @click="confirmDeleteId = item.id">🗑️</button>
+          <td class="muted">{{ item.low_stock_threshold.toLocaleString() }}</td>
+          <td class="gold">{{ formatPrice(item.unit_cost) }} <small>د.ع</small></td>
+          <td class="actions-cell">
+            <button class="icon-btn" @click="openEdit(item)">✏️</button>
+            <button class="icon-btn danger" @click="confirmDeleteId = item.id">🗑️</button>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Create/Edit Dialog -->
-    <InventoryFormDialog
-      v-if="showForm"
-      :editing="editingItem"
-      @save="onSave"
-      @cancel="showForm = false"
-    />
+    <InventoryFormDialog v-if="showForm" :editing="editingItem" @save="onSave" @cancel="showForm = false" />
 
-    <!-- Delete Confirmation -->
-    <div v-if="confirmDeleteId" class="modal-overlay" @click.self="confirmDeleteId = null">
-      <div class="modal-content">
-        <h3 class="modal-title">تأكيد الحذف</h3>
-        <p class="text-muted">هل أنت متأكد من حذف هذه المادة؟</p>
-        <div class="modal-actions">
-          <button class="btn btn-ghost" @click="confirmDeleteId = null">إلغاء</button>
-          <button class="btn btn-primary" style="background: var(--color-danger)" @click="onConfirmDelete">حذف</button>
+    <div v-if="confirmDeleteId" class="overlay" @click.self="confirmDeleteId = null">
+      <div class="confirm-dialog">
+        <h3>تأكيد الحذف</h3>
+        <p>هل أنت متأكد من حذف هذه المادة؟</p>
+        <div class="confirm-actions">
+          <button class="cancel-btn" @click="confirmDeleteId = null">إلغاء</button>
+          <button class="delete-btn" @click="onConfirmDelete">حذف</button>
         </div>
       </div>
     </div>
@@ -118,100 +100,140 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
 </template>
 
 <style scoped>
-.table-toolbar {
+.inv-table { display: flex; flex-direction: column; gap: 16px; }
+
+.toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--gap-lg);
 }
 
-.section-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
+.section-title { font-size: 1rem; font-weight: 800; color: #f0e6d3; }
+
+.add-btn {
+  padding: 8px 18px;
+  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  color: #0d0d0d;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s ease;
 }
 
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
+.add-btn:hover { filter: brightness(1.08); }
 
-.data-table th,
-.data-table td {
-  padding: var(--gap-md);
-  text-align: right;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.data-table th {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semi);
-  background: var(--color-surface);
-}
-
-.data-table tr:hover td {
-  background: var(--color-surface-2);
-}
-
-.cell-name {
-  font-weight: var(--font-weight-semi);
-}
-
-.cell-unit {
-  color: var(--color-text-muted);
-}
-
-.cell-actions {
-  display: flex;
-  gap: var(--gap-xs);
-}
-
-.stock-badge {
-  display: inline-flex;
-  padding: 2px 10px;
-  border-radius: var(--radius-full);
-  font-weight: var(--font-weight-bold);
-  font-variant-numeric: tabular-nums;
-  font-size: var(--font-size-sm);
-}
-
-.stock-badge.ok {
-  background: rgba(39, 174, 96, 0.15);
-  color: var(--color-success);
-}
-
-.stock-badge.low {
-  background: rgba(243, 156, 18, 0.15);
-  color: var(--color-warning);
-}
-
-.stock-badge.critical {
-  background: rgba(231, 76, 60, 0.15);
-  color: var(--color-danger);
-}
-
-.empty-state {
+.empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--gap-md);
-  padding: var(--gap-xl) 0;
-  color: var(--color-text-dim);
+  gap: 12px;
+  padding: 60px 0;
+  color: #444;
+  font-size: 0.9rem;
 }
 
-.empty-icon {
-  font-size: 3rem;
-  opacity: 0.4;
+.empty span { font-size: 2.5rem; opacity: 0.3; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1a1a1a;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.05);
 }
 
-.empty-text {
-  font-size: var(--font-size-lg);
+.table th {
+  padding: 12px 16px;
+  text-align: right;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #555;
+  background: #161616;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 
-.modal-actions {
-  display: flex;
-  gap: var(--gap-md);
-  justify-content: flex-end;
-  margin-top: var(--gap-lg);
+.table td {
+  padding: 12px 16px;
+  text-align: right;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.88rem;
+}
+
+.table tr:last-child td { border-bottom: none; }
+.table tr:hover td { background: rgba(201,168,76,0.04); }
+
+.name-cell { font-weight: 700; color: #e8dcc8; }
+.muted { color: #666; }
+.gold { color: #c9a84c; font-weight: 700; }
+.gold small { font-size: 0.65rem; opacity: 0.7; }
+
+.stock-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.stock-chip.ok { background: rgba(39,174,96,0.12); color: #27ae60; }
+.stock-chip.low { background: rgba(243,156,18,0.12); color: #f39c12; }
+.stock-chip.critical { background: rgba(231,76,60,0.12); color: #e74c3c; }
+
+.actions-cell { display: flex; gap: 4px; }
+
+.icon-btn {
+  width: 32px; height: 32px;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  background: #222;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.icon-btn:hover { background: #2a2a2a; border-color: rgba(201,168,76,0.3); }
+.icon-btn.danger:hover { background: rgba(231,76,60,0.12); border-color: rgba(231,76,60,0.3); }
+
+/* Overlay */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+}
+
+.confirm-dialog {
+  background: #161616;
+  border: 1px solid rgba(231,76,60,0.3);
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 320px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.confirm-dialog h3 { font-size: 1rem; font-weight: 800; color: #f0e6d3; }
+.confirm-dialog p { font-size: 0.85rem; color: #666; }
+
+.confirm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+.cancel-btn {
+  padding: 8px 16px; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; background: transparent; color: #666;
+  font-family: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer;
+}
+
+.delete-btn {
+  padding: 8px 16px; border: none;
+  border-radius: 8px; background: #e74c3c; color: white;
+  font-family: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer;
 }
 </style>

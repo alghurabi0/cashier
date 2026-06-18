@@ -1,200 +1,66 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { useManagement } from '../../composables/useManagement'
-import type { MenuItem } from '../../types'
+import { ref, onMounted } from 'vue'
+import type { InventoryItem } from '../../types'
 
-const props = defineProps<{
-  editing: MenuItem | null
-}>()
-
+const props = defineProps<{ editing: InventoryItem | null }>()
 const emit = defineEmits<{
-  save: [data: { category_id: string; name_ar: string; price: number; cost_calc_method: string; manual_cost_price: number; image_path: string }]
+  save: [data: { name_ar: string; base_unit_ar: string; stock_qty: number; low_stock_threshold: number; unit_cost: number }]
   cancel: []
 }>()
 
-const { categories } = useManagement()
-
-let ManagementService: any = null
-
-const categoryId = ref('')
 const nameAr = ref('')
-const price = ref(0)
-const costCalcMethod = ref('auto')
-const manualCostPrice = ref(0)
-const imagePath = ref('')
-const isUploadingImage = ref(false)
+const baseUnitAr = ref('')
+const stockQty = ref(0)
+const lowThreshold = ref(0)
+const unitCost = ref(0)
 
-const showManualCost = computed(() => costCalcMethod.value === 'manual')
-
-watch(() => props.editing, (item) => {
-  if (item) {
-    categoryId.value = item.category_id
-    nameAr.value = item.name_ar
-    price.value = item.price
-    costCalcMethod.value = item.cost_calc_method
-    manualCostPrice.value = item.manual_cost_price
-    imagePath.value = item.image_path || ''
-  } else {
-    categoryId.value = categories.value.length > 0 ? categories.value[0].id : ''
-    nameAr.value = ''
-    price.value = 0
-    costCalcMethod.value = 'auto'
-    manualCostPrice.value = 0
-    imagePath.value = ''
+onMounted(() => {
+  if (props.editing) {
+    nameAr.value = props.editing.name_ar
+    baseUnitAr.value = props.editing.base_unit_ar
+    stockQty.value = props.editing.stock_qty
+    lowThreshold.value = props.editing.low_stock_threshold
+    unitCost.value = props.editing.unit_cost
   }
-}, { immediate: true })
-
-async function initBindings() {
-  try {
-    ManagementService = await import('../../../bindings/coffeeshop-pos/internal/service/managementservice')
-  } catch { /* not available */ }
-}
-initBindings()
-
-async function onPickImage() {
-  // Use a hidden file input to pick the image
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = 'image/jpeg,image/png,image/webp'
-  input.onchange = async () => {
-    const file = input.files?.[0]
-    if (!file || !ManagementService) return
-
-    isUploadingImage.value = true
-    try {
-      // For Wails, we need to pass the file path — use a temporary URL for preview
-      // Since browser file input doesn't give us a real path, we'll upload directly
-      // For now, store as data URL preview and set path empty until R2 is configured
-      const reader = new FileReader()
-      reader.onload = () => {
-        imagePath.value = reader.result as string
-      }
-      reader.readAsDataURL(file)
-    } catch (err) {
-      console.error('Image upload failed:', err)
-    } finally {
-      isUploadingImage.value = false
-    }
-  }
-  input.click()
-}
-
-function removeImage() {
-  imagePath.value = ''
-}
+})
 
 function onSubmit() {
-  if (!nameAr.value.trim() || !categoryId.value || price.value <= 0) return
-  emit('save', {
-    category_id: categoryId.value,
-    name_ar: nameAr.value.trim(),
-    price: price.value,
-    cost_calc_method: costCalcMethod.value,
-    manual_cost_price: showManualCost.value ? manualCostPrice.value : 0,
-    image_path: imagePath.value,
-  })
+  if (!nameAr.value.trim() || !baseUnitAr.value.trim()) return
+  emit('save', { name_ar: nameAr.value.trim(), base_unit_ar: baseUnitAr.value.trim(), stock_qty: stockQty.value, low_stock_threshold: lowThreshold.value, unit_cost: unitCost.value })
 }
 </script>
 
 <template>
-  <div class="modal-overlay" @click.self="emit('cancel')">
-    <div class="modal-content">
-      <h2 class="modal-title">{{ editing ? 'تعديل منتج' : 'إضافة منتج جديد' }}</h2>
+  <div class="overlay" @click.self="emit('cancel')">
+    <div class="dialog">
+      <h2 class="dialog-title">{{ editing ? '✏️ تعديل مادة' : '➕ إضافة مادة جديدة' }}</h2>
 
-      <form class="form" @submit.prevent="onSubmit">
-        <div class="form-group">
-          <label class="form-label">اسم المنتج</label>
-          <input
-            v-model="nameAr"
-            type="text"
-            class="form-input"
-            placeholder="مثال: لاتيه"
-            autofocus
-          />
+      <form @submit.prevent="onSubmit" class="form">
+        <div class="field">
+          <label>اسم المادة</label>
+          <input v-model="nameAr" type="text" placeholder="مثال: بن إسبريسو" required />
         </div>
-
-        <div class="form-group">
-          <label class="form-label">الفئة</label>
-          <select v-model="categoryId" class="form-input">
-            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-              {{ cat.name_ar }}
-            </option>
-          </select>
-          <p v-if="categories.length === 0" class="form-hint" style="color: var(--color-danger)">
-            ⚠️ أضف فئة من تبويب "الفئات" أولاً
-          </p>
+        <div class="field">
+          <label>وحدة القياس</label>
+          <input v-model="baseUnitAr" type="text" placeholder="مثال: غرام، مل، كيلو" required />
         </div>
-
-        <div class="form-group">
-          <label class="form-label">السعر (د.ع)</label>
-          <input
-            v-model.number="price"
-            type="number"
-            class="form-input"
-            min="0"
-            step="100"
-            style="width: 180px"
-          />
-        </div>
-
-        <!-- Image Upload -->
-        <div class="form-group">
-          <label class="form-label">صورة المنتج (اختياري)</label>
-          <div class="image-upload-area">
-            <div v-if="imagePath" class="image-preview">
-              <img :src="imagePath" alt="معاينة" class="preview-img" />
-              <button type="button" class="remove-image-btn" @click="removeImage" title="إزالة الصورة">✕</button>
-            </div>
-            <button
-              v-else
-              type="button"
-              class="upload-btn"
-              :disabled="isUploadingImage"
-              @click="onPickImage"
-            >
-              <span v-if="isUploadingImage">⏳ جاري الرفع...</span>
-              <span v-else>📷 اختر صورة</span>
-            </button>
-            <button
-              v-if="imagePath"
-              type="button"
-              class="btn btn-ghost btn-sm"
-              @click="onPickImage"
-            >
-              تغيير الصورة
-            </button>
+        <div class="field-row">
+          <div class="field">
+            <label>الكمية الأولية</label>
+            <input v-model.number="stockQty" type="number" min="0" />
+          </div>
+          <div class="field">
+            <label>حد التنبيه</label>
+            <input v-model.number="lowThreshold" type="number" min="0" />
           </div>
         </div>
-
-        <div class="form-group">
-          <label class="form-label">طريقة حساب التكلفة</label>
-          <select v-model="costCalcMethod" class="form-input" style="width: 200px">
-            <option value="auto">تلقائي (من الوصفة)</option>
-            <option value="manual">يدوي</option>
-          </select>
+        <div class="field">
+          <label>تكلفة الوحدة (د.ع)</label>
+          <input v-model.number="unitCost" type="number" min="0" />
         </div>
-
-        <div v-if="showManualCost" class="form-group">
-          <label class="form-label">التكلفة اليدوية (د.ع)</label>
-          <input
-            v-model.number="manualCostPrice"
-            type="number"
-            class="form-input"
-            min="0"
-            step="100"
-            style="width: 180px"
-          />
-        </div>
-
         <div class="form-actions">
-          <button type="button" class="btn btn-ghost" @click="emit('cancel')">إلغاء</button>
-          <button
-            type="submit"
-            class="btn btn-primary"
-            :disabled="!nameAr.trim() || !categoryId || price <= 0"
-          >
-            {{ editing ? 'حفظ التعديل' : 'إضافة' }}
-          </button>
+          <button type="button" class="cancel-btn" @click="emit('cancel')">إلغاء</button>
+          <button type="submit" class="save-btn">{{ editing ? 'حفظ التعديلات' : 'إضافة' }}</button>
         </div>
       </form>
     </div>
@@ -202,113 +68,63 @@ function onSubmit() {
 </template>
 
 <style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-md);
-  margin-top: var(--gap-lg);
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-xs);
+.dialog {
+  background: #161616;
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 18px;
+  padding: 24px;
+  min-width: 400px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  animation: slideUp 0.2s ease;
 }
 
-.form-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semi);
-  color: var(--color-text-muted);
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.form-input {
-  padding: var(--gap-sm) var(--gap-md);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-sm);
-  color: var(--color-text);
-  font-family: var(--font-family);
-  font-size: var(--font-size-md);
+.dialog-title { font-size: 1rem; font-weight: 800; color: #f0e6d3; margin-bottom: 20px; }
+
+.form { display: flex; flex-direction: column; gap: 14px; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 0.75rem; font-weight: 700; color: #666; }
+.field input {
+  padding: 10px 12px;
+  background: #222;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  color: #f0e6d3;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: border-color 0.15s;
+}
+.field input:focus { outline: none; border-color: #c9a84c; }
+
+.field-row { display: flex; gap: 12px; }
+.field-row .field { flex: 1; }
+
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+
+.cancel-btn {
+  padding: 10px 18px; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; background: transparent; color: #666;
+  font-family: inherit; font-size: 0.88rem; font-weight: 700; cursor: pointer;
 }
 
-.form-input:focus {
-  outline: none;
-  border-color: var(--color-accent);
+.save-btn {
+  padding: 10px 24px; border: none;
+  border-radius: 10px; background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  color: #0d0d0d; font-family: inherit; font-size: 0.88rem; font-weight: 800; cursor: pointer;
 }
 
-select.form-input {
-  cursor: pointer;
-}
-
-.form-hint {
-  font-size: var(--font-size-xs);
-}
-
-.form-actions {
-  display: flex;
-  gap: var(--gap-md);
-  justify-content: flex-end;
-  margin-top: var(--gap-sm);
-}
-
-/* Image upload styles */
-.image-upload-area {
-  display: flex;
-  align-items: center;
-  gap: var(--gap-md);
-}
-
-.image-preview {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 2px solid var(--color-border-light);
-}
-
-.preview-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.remove-image-btn {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  font-size: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.upload-btn {
-  padding: var(--gap-md) var(--gap-lg);
-  border: 2px dashed var(--color-border-light);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-2);
-  color: var(--color-text-muted);
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.upload-btn:hover:not(:disabled) {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-}
-
-.upload-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+.save-btn:hover { filter: brightness(1.08); }
 </style>
