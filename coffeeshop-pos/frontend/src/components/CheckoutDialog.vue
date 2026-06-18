@@ -30,7 +30,7 @@ onMounted(async () => {
     const result = await ManagementService.ListTables()
     tables.value = result || []
   } catch {
-    // Tables not available — that's fine, table selection is optional
+    // Tables not available
   }
 })
 
@@ -40,33 +40,34 @@ function selectTable(number: string) {
 </script>
 
 <template>
-  <div class="modal-overlay" @click.self="emit('cancel')">
-    <div class="modal-content checkout-modal">
-      <h2 class="modal-title">تأكيد الطلب</h2>
+  <div class="overlay" @click.self="emit('cancel')">
+    <div class="dialog">
 
-      <div class="order-summary">
-        <div
-          v-for="item in items"
-          :key="item.menu_item_id"
-          class="summary-item"
-        >
-          <span class="summary-name">{{ item.name_ar }}</span>
-          <span class="summary-qty">×{{ item.quantity }}</span>
-          <span class="summary-price">{{ formatPrice(item.price * item.quantity) }}</span>
+      <!-- Header -->
+      <div class="dialog-header">
+        <span class="dialog-icon">🧾</span>
+        <h2 class="dialog-title">تأكيد الطلب</h2>
+      </div>
+
+      <!-- Items -->
+      <div class="items-list">
+        <div v-for="item in items" :key="item.menu_item_id" class="item-row">
+          <span class="item-qty">×{{ item.quantity }}</span>
+          <span class="item-name">{{ item.name_ar }}</span>
+          <span class="item-price">{{ formatPrice(item.price * item.quantity) }}</span>
         </div>
       </div>
 
-      <div class="summary-divider"></div>
-
-      <div class="summary-total">
-        <span class="total-label">المجموع</span>
-        <span class="total-value">{{ formatPrice(total) }} <small>د.ع</small></span>
+      <!-- Total -->
+      <div class="total-row">
+        <span class="total-label">المجموع الكلي</span>
+        <span class="total-val">{{ formatPrice(total) }} <small>د.ع</small></span>
       </div>
 
-      <!-- Table Selection (optional) -->
-      <div v-if="tables.length > 0" class="table-section">
-        <span class="section-label text-muted text-sm">الطاولة (اختياري)</span>
-        <div class="table-buttons">
+      <!-- Table Selection -->
+      <div v-if="tables.length > 0" class="section">
+        <div class="section-label">🪑 الطاولة <span class="optional">(اختياري)</span></div>
+        <div class="table-grid">
           <button
             v-for="table in tables"
             :key="table.id"
@@ -74,189 +75,261 @@ function selectTable(number: string) {
             :class="{ active: selectedTable === table.number }"
             @click="selectTable(table.number)"
           >
-            🪑 {{ table.number }}
+            {{ table.number }}
           </button>
         </div>
       </div>
 
-      <div class="payment-section">
-        <span class="payment-label text-muted text-sm">طريقة الدفع</span>
-        <div class="payment-methods">
-          <button class="payment-btn active">
-            <span class="payment-icon">💵</span>
+      <!-- Payment -->
+      <div class="section">
+        <div class="section-label">💳 طريقة الدفع</div>
+        <div class="payment-row">
+          <button class="pay-btn active">
+            <span>💵</span>
             <span>نقدي</span>
           </button>
         </div>
       </div>
 
-      <div class="modal-actions">
-        <button class="btn btn-ghost" @click="emit('cancel')">إلغاء</button>
-        <button class="btn btn-primary btn-lg" @click="emit('confirm', selectedTable)">
-          ✓ تأكيد ودفع
+      <!-- Actions -->
+      <div class="actions">
+        <button class="cancel-btn" @click="emit('cancel')">إلغاء</button>
+        <button class="confirm-btn" @click="emit('confirm', selectedTable)">
+          ✓ تأكيد الطلب
         </button>
       </div>
+
     </div>
   </div>
 </template>
 
 <style scoped>
-.checkout-modal {
-  min-width: 450px;
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
-.modal-title {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--gap-lg);
-  text-align: center;
+.dialog {
+  background: #161616;
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 20px;
+  padding: 28px;
+  min-width: 420px;
+  max-width: 500px;
+  width: 90vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(201,168,76,0.06);
+  animation: slideUp 0.2s ease;
 }
 
-.order-summary {
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.dialog-icon { font-size: 1.4rem; }
+
+.dialog-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f0e6d3;
+}
+
+/* Items */
+.items-list {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-sm);
-  max-height: 300px;
+  gap: 6px;
+  margin-bottom: 16px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
-.summary-item {
+.item-row {
   display: flex;
   align-items: center;
-  gap: var(--gap-md);
-  padding: var(--gap-sm) 0;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 0.88rem;
 }
 
-.summary-name {
+.item-qty {
+  color: #c9a84c;
+  font-weight: 800;
+  min-width: 28px;
+  font-size: 0.82rem;
+}
+
+.item-name {
   flex: 1;
-  font-weight: var(--font-weight-semi);
+  color: #d4c8b0;
 }
 
-.summary-qty {
-  color: var(--color-text-muted);
+.item-price {
+  color: #888;
   font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
 }
 
-.summary-price {
-  font-weight: var(--font-weight-bold);
-  font-variant-numeric: tabular-nums;
-  min-width: 70px;
-  text-align: left;
-}
-
-.summary-divider {
-  height: 1px;
-  background: var(--color-border-light);
-  margin: var(--gap-md) 0;
-}
-
-.summary-total {
+/* Total */
+.total-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: var(--gap-lg);
+  padding: 14px 0;
+  border-top: 1px solid rgba(201,168,76,0.15);
+  border-bottom: 1px solid rgba(201,168,76,0.15);
+  margin-bottom: 18px;
 }
 
-.summary-total .total-label {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semi);
+.total-label {
+  font-size: 0.9rem;
+  color: #888;
+  font-weight: 600;
 }
 
-.summary-total .total-value {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-extra);
-  color: var(--color-accent);
+.total-val {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #c9a84c;
+  font-variant-numeric: tabular-nums;
 }
 
-.summary-total .total-value small {
-  font-size: var(--font-size-sm);
+.total-val small {
+  font-size: 0.7rem;
   opacity: 0.7;
+  margin-right: 3px;
 }
 
-.table-section {
-  margin-bottom: var(--gap-lg);
+/* Sections */
+.section {
+  margin-bottom: 18px;
 }
 
 .section-label {
-  display: block;
-  margin-bottom: var(--gap-sm);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #666;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.table-buttons {
+.optional {
+  font-weight: 400;
+  color: #444;
+}
+
+/* Table */
+.table-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--gap-sm);
+  gap: 7px;
 }
 
 .table-btn {
-  padding: var(--gap-sm) var(--gap-md);
-  border: 2px solid var(--color-border-light);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  font-family: var(--font-family);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semi);
+  padding: 7px 16px;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 999px;
+  background: #222;
+  color: #888;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.15s ease;
 }
 
 .table-btn:hover {
-  border-color: var(--color-accent);
+  border-color: rgba(201,168,76,0.35);
+  color: #c9a84c;
 }
 
 .table-btn.active {
-  border-color: var(--color-accent);
-  background: rgba(233, 69, 96, 0.1);
-  color: var(--color-accent);
-  font-weight: var(--font-weight-bold);
+  background: rgba(201,168,76,0.15);
+  border-color: #c9a84c;
+  color: #c9a84c;
 }
 
-.payment-section {
-  margin-bottom: var(--gap-lg);
-}
+/* Payment */
+.payment-row { display: flex; gap: 8px; }
 
-.payment-label {
-  display: block;
-  margin-bottom: var(--gap-sm);
-}
-
-.payment-methods {
-  display: flex;
-  gap: var(--gap-sm);
-}
-
-.payment-btn {
+.pay-btn {
   display: flex;
   align-items: center;
-  gap: var(--gap-sm);
-  padding: var(--gap-md) var(--gap-lg);
-  border: 2px solid var(--color-border-light);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-2);
-  color: var(--color-text);
-  font-family: var(--font-family);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semi);
+  gap: 8px;
+  padding: 10px 20px;
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 10px;
+  background: rgba(201,168,76,0.08);
+  color: #c9a84c;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all var(--transition-fast);
 }
 
-.payment-btn.active {
-  border-color: var(--color-accent);
-  background: rgba(233, 69, 96, 0.1);
-}
-
-.payment-icon {
-  font-size: var(--font-size-xl);
-}
-
-.modal-actions {
+/* Actions */
+.actions {
   display: flex;
-  gap: var(--gap-md);
-  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
 }
 
-.modal-actions .btn-lg {
+.cancel-btn {
+  padding: 12px 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  background: transparent;
+  color: #666;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cancel-btn:hover {
+  background: #222;
+  color: #999;
+}
+
+.confirm-btn {
   flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  color: #0d0d0d;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 4px 20px rgba(201,168,76,0.3);
+}
+
+.confirm-btn:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 6px 28px rgba(201,168,76,0.45);
+}
+
+.confirm-btn:active {
+  transform: scale(0.98);
 }
 </style>
