@@ -18,6 +18,7 @@ const showCheckout = ref(false)
 const toastMessage = ref('')
 const toastVisible = ref(false)
 const syncStatus = ref<'online' | 'offline' | 'syncing'>('offline')
+const kitchenModeEnabled = ref(false)
 
 const { items: cartItems, total, itemCount, addItem, removeItem, incrementQty, decrementQty, clear: clearCart } = useCart()
 const { todayOrders, addOrder } = useOrders()
@@ -54,6 +55,12 @@ async function initBindings() {
   } catch {
     console.warn('ReceiptService bindings not available')
   }
+  // Load kitchen mode setting
+  try {
+    const configMod = await import('../../bindings/coffeeshop-pos/internal/service/configstoreservice')
+    const kitchenVal = await configMod.Get('kitchen_mode_enabled')
+    kitchenModeEnabled.value = kitchenVal === 'true'
+  } catch { /* not available */ }
 }
 
 // ── Data Loading ──
@@ -173,6 +180,7 @@ onUnmounted(() => {
     <HeaderBar
       :order-count="acceptedOrders.length"
       :sync-status="syncStatus"
+      :kitchen-mode-enabled="kitchenModeEnabled"
     />
 
     <div class="pos-body">
@@ -202,6 +210,7 @@ onUnmounted(() => {
     <OrderQueuePanel
       :accepted-orders="acceptedOrders"
       :completed-orders="recentCompletedOrders"
+      :kitchen-mode-enabled="kitchenModeEnabled"
     />
 
     <CheckoutDialog

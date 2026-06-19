@@ -5,6 +5,7 @@ import { formatPrice } from '../types'
 defineProps<{
   acceptedOrders: OrderWithItems[]
   completedOrders: OrderWithItems[]
+  kitchenModeEnabled: boolean
 }>()
 
 function timeAgo(dateStr: string): string {
@@ -22,7 +23,7 @@ function timeAgo(dateStr: string): string {
 <template>
   <div class="order-queue-panel" v-if="acceptedOrders.length > 0 || completedOrders.length > 0">
     <!-- Accepted (in-progress) -->
-    <div v-if="acceptedOrders.length > 0" class="queue-section">
+    <div v-if="kitchenModeEnabled && acceptedOrders.length > 0" class="queue-section">
       <div class="section-header preparing">
         <span class="section-icon">⏳</span>
         <span class="section-title">قيد التحضير</span>

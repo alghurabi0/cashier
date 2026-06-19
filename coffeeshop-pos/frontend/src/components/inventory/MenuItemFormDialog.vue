@@ -1,62 +1,90 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { InventoryItem } from '../../types'
+import type { MenuItem } from '../../types'
+import { useManagement } from '../../composables/useManagement'
 
-const props = defineProps<{ editing: InventoryItem | null }>()
+const { categories } = useManagement()
+
+const props = defineProps<{ editing: MenuItem | null }>()
 const emit = defineEmits<{
-  save: [data: { name_ar: string; base_unit_ar: string; stock_qty: number; low_stock_threshold: number; unit_cost: number }]
+  save: [data: { category_id: string; name_ar: string; price: number; cost_calc_method: string; manual_cost_price: number; image_path: string }]
   cancel: []
 }>()
 
+const categoryId = ref('')
 const nameAr = ref('')
-const baseUnitAr = ref('')
-const stockQty = ref(0)
-const lowThreshold = ref(0)
-const unitCost = ref(0)
+const price = ref(0)
+const costCalcMethod = ref('auto')
+const manualCostPrice = ref(0)
+const imagePath = ref('')
 
 onMounted(() => {
   if (props.editing) {
+    categoryId.value = props.editing.category_id
     nameAr.value = props.editing.name_ar
-    baseUnitAr.value = props.editing.base_unit_ar
-    stockQty.value = props.editing.stock_qty
-    lowThreshold.value = props.editing.low_stock_threshold
-    unitCost.value = props.editing.unit_cost
+    price.value = props.editing.price
+    costCalcMethod.value = props.editing.cost_calc_method
+    manualCostPrice.value = props.editing.manual_cost_price
+    imagePath.value = props.editing.image_path
+  } else if (categories.value.length > 0) {
+    categoryId.value = categories.value[0].id
   }
 })
 
 function onSubmit() {
-  if (!nameAr.value.trim() || !baseUnitAr.value.trim()) return
-  emit('save', { name_ar: nameAr.value.trim(), base_unit_ar: baseUnitAr.value.trim(), stock_qty: stockQty.value, low_stock_threshold: lowThreshold.value, unit_cost: unitCost.value })
+  if (!nameAr.value.trim() || !categoryId.value) return
+  emit('save', {
+    category_id: categoryId.value,
+    name_ar: nameAr.value.trim(),
+    price: price.value,
+    cost_calc_method: costCalcMethod.value,
+    manual_cost_price: manualCostPrice.value,
+    image_path: imagePath.value
+  })
 }
 </script>
 
 <template>
   <div class="overlay" @click.self="emit('cancel')">
     <div class="dialog">
-      <h2 class="dialog-title">{{ editing ? '✏️ تعديل مادة' : '➕ إضافة مادة جديدة' }}</h2>
+      <h2 class="dialog-title">{{ editing ? '✏️ تعديل منتج' : '➕ إضافة منتج جديد' }}</h2>
 
       <form @submit.prevent="onSubmit" class="form">
         <div class="field">
-          <label>اسم المادة</label>
-          <input v-model="nameAr" type="text" placeholder="مثال: بن إسبريسو" required />
+          <label>الفئة</label>
+          <select v-model="categoryId" required>
+            <option disabled value="">اختر الفئة</option>
+            <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+              {{ cat.name_ar }}
+            </option>
+          </select>
         </div>
         <div class="field">
-          <label>وحدة القياس</label>
-          <input v-model="baseUnitAr" type="text" placeholder="مثال: غرام، مل، كيلو" required />
+          <label>اسم المنتج</label>
+          <input v-model="nameAr" type="text" placeholder="مثال: كابتشينو" required />
         </div>
         <div class="field-row">
           <div class="field">
-            <label>الكمية الأولية</label>
-            <input v-model.number="stockQty" type="number" min="0" />
+            <label>السعر (د.ع)</label>
+            <input v-model.number="price" type="number" min="0" required />
           </div>
           <div class="field">
-            <label>حد التنبيه</label>
-            <input v-model.number="lowThreshold" type="number" min="0" />
+            <label>مسار الصورة (اختياري)</label>
+            <input v-model="imagePath" type="text" placeholder="/images/cup.png" />
           </div>
         </div>
-        <div class="field">
-          <label>تكلفة الوحدة (د.ع)</label>
-          <input v-model.number="unitCost" type="number" min="0" />
+        <div class="field-row">
+          <div class="field">
+            <label>طريقة حساب التكلفة</label>
+            <select v-model="costCalcMethod" required>
+              <option value="auto">تلقائي (من المكونات)</option>
+              <option value="manual">يدوي</option>
+            </select>
+          </div>
+          <div class="field" v-if="costCalcMethod === 'manual'">
+            <label>التكلفة اليدوية (د.ع)</label>
+            <input v-model.number="manualCostPrice" type="number" min="0" />
+          </div>
         </div>
         <div class="form-actions">
           <button type="button" class="cancel-btn" @click="emit('cancel')">إلغاء</button>
@@ -97,7 +125,7 @@ function onSubmit() {
 
 .field { display: flex; flex-direction: column; gap: 5px; }
 .field label { font-size: 0.75rem; font-weight: 700; color: #666; }
-.field input {
+.field input, .field select {
   padding: 10px 12px;
   background: #222;
   border: 1px solid rgba(255,255,255,0.07);
@@ -107,7 +135,7 @@ function onSubmit() {
   font-size: 0.9rem;
   transition: border-color 0.15s;
 }
-.field input:focus { outline: none; border-color: #c9a84c; }
+.field input:focus, .field select:focus { outline: none; border-color: #c9a84c; }
 
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }

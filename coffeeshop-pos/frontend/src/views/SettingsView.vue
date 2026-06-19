@@ -16,6 +16,7 @@ const syncInterval = ref(30)
 const syncMessage = ref('')
 const menuBaseURL = ref('')
 const menuURLSaved = ref(false)
+const kitchenModeEnabled = ref(false)
 
 let ConfigStoreService: any = null
 
@@ -36,8 +37,22 @@ onMounted(async () => {
     ConfigStoreService = await import('../../bindings/coffeeshop-pos/internal/service/configstoreservice')
     const savedURL = await ConfigStoreService.Get('menu_base_url')
     if (savedURL) menuBaseURL.value = savedURL
+    // Load kitchen mode setting
+    const kitchenVal = await ConfigStoreService.Get('kitchen_mode_enabled')
+    kitchenModeEnabled.value = kitchenVal === 'true'
   } catch { /* not available */ }
 })
+
+async function toggleKitchenMode() {
+  if (!ConfigStoreService) return
+  try {
+    const newVal = !kitchenModeEnabled.value
+    await ConfigStoreService.SetKitchenModeEnabled(newVal)
+    kitchenModeEnabled.value = newVal
+  } catch (err) {
+    console.error('Failed to toggle kitchen mode:', err)
+  }
+}
 
 async function saveMenuBaseURL() {
   if (!ConfigStoreService) return
@@ -72,6 +87,31 @@ async function saveMenuBaseURL() {
       <!-- API Connection -->
       <div class="settings-section">
         <APIConnectionPanel />
+      </div>
+
+      <div class="settings-divider"></div>
+
+      <!-- Workflow Settings -->
+      <div class="settings-section">
+        <h2 class="settings-section-title">🔄 سير العمل</h2>
+        <div class="form-group">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="form-label">وضع المطبخ</span>
+              <p class="form-hint text-muted text-sm">
+                عند التفعيل، تمر الطلبات بمرحلة التحضير في المطبخ قبل اكتمالها.
+                عند التعطيل، تُعتبر الطلبات مكتملة مباشرة عند إنشائها أو قبولها.
+              </p>
+            </div>
+            <button
+              class="toggle-btn"
+              :class="{ active: kitchenModeEnabled }"
+              @click="toggleKitchenMode"
+            >
+              <span class="toggle-knob"></span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="settings-divider"></div>
@@ -258,5 +298,49 @@ async function saveMenuBaseURL() {
   justify-content: space-between;
   padding: var(--gap-sm) 0;
   border-bottom: 1px solid var(--color-border);
+}
+
+/* Toggle */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-lg);
+}
+
+.toggle-info {
+  flex: 1;
+}
+
+.toggle-btn {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  border-radius: 14px;
+  border: none;
+  background: var(--color-surface-2);
+  cursor: pointer;
+  transition: background 0.25s ease;
+  flex-shrink: 0;
+}
+
+.toggle-btn.active {
+  background: var(--color-success, #27ae60);
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.25s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.toggle-btn.active .toggle-knob {
+  transform: translateX(24px);
 }
 </style>

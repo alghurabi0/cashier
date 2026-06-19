@@ -17,7 +17,9 @@ import { useWebOrders } from './composables/useWebOrders'
 
 const activeView = ref('pos')
 const lastSyncTime = ref('')
+const kitchenModeEnabled = ref(false)
 let DataService: any = null
+let ConfigStoreService: any = null
 let syncTimePoll: ReturnType<typeof setInterval> | null = null
 
 async function pollSyncTime() {
@@ -57,11 +59,18 @@ onMounted(async () => {
     return
   }
 
+  // Load kitchen mode setting
+  try {
+    ConfigStoreService = await import('../bindings/coffeeshop-pos/internal/service/configstoreservice')
+    const kitchenVal = await ConfigStoreService.Get('kitchen_mode_enabled')
+    kitchenModeEnabled.value = kitchenVal === 'true'
+  } catch { /* not available */ }
+
   // API is configured — check for existing PIN session
   await checkExistingSession()
   if (currentUser.value) {
     appState.value = 'ready'
-    activeView.value = currentUser.value.role === 'kitchen' ? 'kitchen' : 'pos'
+    activeView.value = (currentUser.value.role === 'kitchen' && kitchenModeEnabled.value) ? 'kitchen' : 'pos'
     await initWebOrders()
     startPolling(2000)
     // Start sync time polling
@@ -84,7 +93,7 @@ import { watch } from 'vue'
 watch(isLoggedIn, async (loggedIn) => {
   if (loggedIn && appState.value === 'login') {
     appState.value = 'ready'
-    activeView.value = currentUser.value?.role === 'kitchen' ? 'kitchen' : 'pos'
+    activeView.value = (currentUser.value?.role === 'kitchen' && kitchenModeEnabled.value) ? 'kitchen' : 'pos'
     await initWebOrders()
     startPolling(2000)
     await pollSyncTime()
@@ -121,6 +130,7 @@ async function onLogout() {
       :pending-web-orders="pendingCount"
       :user-role="userRole"
       :user-name="userName"
+      :kitchen-mode-enabled="kitchenModeEnabled"
       @navigate="activeView = $event"
       @logout="onLogout"
     />

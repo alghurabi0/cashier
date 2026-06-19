@@ -43,9 +43,19 @@ func main() {
 	}
 	slog.Info("SQLite migrations complete")
 
+	// Create sync client and worker
+	apiClient := posSync.NewAPIClient(cfg.APIBaseURL)
+	syncWorker := posSync.NewWorker(apiClient, db)
+
+	// ConfigStore: persistent API connection (must be created before services that depend on it)
+	configStore := service.NewConfigStoreService(db, apiClient)
+
+	// Try auto-login using stored credentials (from previous setup)
+	configStore.TryAutoLogin()
+
 	// Create services
 	dataService := service.NewDataService(db)
-	orderService := service.NewOrderService(db)
+	orderService := service.NewOrderService(db, configStore)
 	receiptService := service.NewReceiptService("المقهى")
 	authService := service.NewAuthService(db)
 	reportService := service.NewReportService(db)
@@ -53,21 +63,11 @@ func main() {
 	// Seed default admin if no users exist (first launch)
 	authService.SeedDefaultAdmin()
 
-	// Create sync client and worker
-	apiClient := posSync.NewAPIClient(cfg.APIBaseURL)
-	syncWorker := posSync.NewWorker(apiClient, db)
-
-	// ConfigStore: persistent API connection (replaces env var approach)
-	configStore := service.NewConfigStoreService(db, apiClient)
-
-	// Try auto-login using stored credentials (from previous setup)
-	configStore.TryAutoLogin()
-
 	// Management service (requires apiClient + syncWorker)
 	managementService := service.NewManagementService(apiClient, syncWorker)
 
 	// Web order service (manages incoming web menu orders)
-	webOrderService := service.NewWebOrderService(db, apiClient)
+	webOrderService := service.NewWebOrderService(db, apiClient, configStore)
 
 	// SSE client for real-time web order notifications
 	sseClient := posSync.NewSSEClient(apiClient, func(event posSync.SSEEvent) {

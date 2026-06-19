@@ -13,12 +13,13 @@ import (
 // OrderService is a Wails-bound service for creating and managing orders.
 // All exported methods are callable from the Vue frontend.
 type OrderService struct {
-	db *sqlx.DB
+	db          *sqlx.DB
+	configStore *ConfigStoreService
 }
 
 // NewOrderService creates a new OrderService.
-func NewOrderService(db *sqlx.DB) *OrderService {
-	return &OrderService{db: db}
+func NewOrderService(db *sqlx.DB, configStore *ConfigStoreService) *OrderService {
+	return &OrderService{db: db, configStore: configStore}
 }
 
 // CreateOrder is called from the frontend when the cashier confirms checkout.
@@ -70,11 +71,16 @@ func (s *OrderService) CreateOrder(items []model.CartItem, paymentMethod string,
 	}
 	defer tx.Rollback()
 
-	// Insert order (status = 'accepted', kitchen will mark as 'completed')
+	// Determine initial status based on kitchen mode
+	initialStatus := "completed"
+	if s.configStore.IsKitchenModeEnabled() {
+		initialStatus = "accepted"
+	}
+
 	_, err = tx.Exec(
 		`INSERT INTO orders (id, order_number, source, table_number, status, total, payment_method, created_at, synced)
-		 VALUES (?, ?, 'cashier', ?, 'accepted', ?, ?, ?, 0)`,
-		orderID, orderNumber, tableNumber, total, paymentMethod, createdAt,
+		 VALUES (?, ?, 'cashier', ?, ?, ?, ?, ?, 0)`,
+		orderID, orderNumber, tableNumber, initialStatus, total, paymentMethod, createdAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert order: %w", err)
@@ -109,7 +115,7 @@ func (s *OrderService) CreateOrder(items []model.CartItem, paymentMethod string,
 		OrderNumber:   orderNumber,
 		Source:        "cashier",
 		TableNumber:   tableNumber,
-		Status:        "accepted",
+		Status:        initialStatus,
 		Total:         total,
 		PaymentMethod: paymentMethod,
 		CreatedAt:     createdAt,

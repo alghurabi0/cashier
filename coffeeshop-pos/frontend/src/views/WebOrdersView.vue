@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useWebOrders } from '../composables/useWebOrders'
 import WebOrderCard from '../components/web-orders/WebOrderCard.vue'
 
@@ -18,10 +18,18 @@ const {
   completeOrder,
 } = useWebOrders()
 
+const kitchenModeEnabled = ref(false)
+
 onMounted(async () => {
   await initBindings()
   await loadOrders()
   startPolling(2000)
+  // Load kitchen mode setting
+  try {
+    const configMod = await import('../../bindings/coffeeshop-pos/internal/service/configstoreservice')
+    const kitchenVal = await configMod.Get('kitchen_mode_enabled')
+    kitchenModeEnabled.value = kitchenVal === 'true'
+  } catch { /* not available */ }
 })
 
 onUnmounted(() => {
@@ -46,7 +54,7 @@ onUnmounted(() => {
             <span>بانتظار</span>
             <strong>{{ pendingOrders.length }}</strong>
           </div>
-          <div class="stat-chip accepted-chip">
+          <div class="stat-chip accepted-chip" v-if="kitchenModeEnabled">
             <span class="chip-dot" />
             <span>مقبولة</span>
             <strong>{{ acceptedOrders.length }}</strong>
@@ -87,8 +95,8 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Accepted -->
-      <div class="order-column accepted-col">
+      <!-- Accepted (only show when kitchen mode is enabled) -->
+      <div class="order-column accepted-col" v-if="kitchenModeEnabled">
         <div class="column-header">
           <div class="col-indicator accepted-ind" />
           <span class="column-title">✅ مقبولة</span>

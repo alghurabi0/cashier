@@ -107,3 +107,18 @@ func (s *ConfigStoreService) TryAutoLogin() bool {
 	slog.Info("auto-login successful", "url", conn.APIURL)
 	return true
 }
+
+// IsKitchenModeEnabled returns whether the kitchen preparation step is active.
+// Default is false (orders go directly to 'completed').
+func (s *ConfigStoreService) IsKitchenModeEnabled() bool {
+	return s.Get("kitchen_mode_enabled") == "true"
+}
+
+// SetKitchenModeEnabled updates the kitchen mode setting.
+func (s *ConfigStoreService) SetKitchenModeEnabled(enabled bool) error {
+	val := "false"
+	if enabled {
+		val = "true"
+	}
+	return s.Set("kitchen_mode_enabled", val)
+}

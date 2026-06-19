@@ -4,6 +4,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 defineProps<{
   orderCount: number
   syncStatus: 'online' | 'offline' | 'syncing'
+  kitchenModeEnabled: boolean
 }>()
 
 const currentTime = ref('')
@@ -38,7 +39,7 @@ onUnmounted(() => clearInterval(timer))
     </div>
 
     <div class="header-left" style="--wails-draggable: no-drag">
-      <div class="order-chip" v-if="orderCount > 0">
+      <div class="order-chip" v-if="kitchenModeEnabled && orderCount > 0">
         <span class="order-chip-dot"></span>
         <span>{{ orderCount }} طلب نشط</span>
       </div>

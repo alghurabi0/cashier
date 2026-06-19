@@ -20,6 +20,7 @@ import * as sync$0 from "../sync/models.js";
 
 /**
  * AcceptOrder accepts a pending order, triggers stock deduction, and updates the API.
+ * When kitchen mode is off, the order is also immediately completed.
  */
 export function AcceptOrder(orderID: string): $CancellablePromise<void> {
     return $Call.ByID(2693326279, orderID);

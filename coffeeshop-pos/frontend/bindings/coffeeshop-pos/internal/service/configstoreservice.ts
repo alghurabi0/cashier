@@ -32,6 +32,14 @@ export function GetAPIConnection(): $CancellablePromise<$models.APIConnection> {
 }
 
 /**
+ * IsKitchenModeEnabled returns whether the kitchen preparation step is active.
+ * Default is false (orders go directly to 'completed').
+ */
+export function IsKitchenModeEnabled(): $CancellablePromise<boolean> {
+    return $Call.ByID(3944251964);
+}
+
+/**
  * IsSetup returns true if the API connection has been configured.
  */
 export function IsSetup(): $CancellablePromise<boolean> {
@@ -43,6 +51,13 @@ export function IsSetup(): $CancellablePromise<boolean> {
  */
 export function Set(key: string, value: string): $CancellablePromise<void> {
     return $Call.ByID(3555116652, key, value);
+}
+
+/**
+ * SetKitchenModeEnabled updates the kitchen mode setting.
+ */
+export function SetKitchenModeEnabled(enabled: boolean): $CancellablePromise<void> {
+    return $Call.ByID(2198719036, enabled);
 }
 
 /**

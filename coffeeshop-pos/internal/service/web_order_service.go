@@ -16,10 +16,11 @@ import (
 // WebOrderService manages incoming web menu orders on the POS side.
 // It is Wails-bound so the Vue frontend can call its methods.
 type WebOrderService struct {
-	db        *sqlx.DB
-	apiClient *posSync.APIClient
-	mu        gosync.RWMutex
-	fetched   bool
+	db          *sqlx.DB
+	apiClient   *posSync.APIClient
+	configStore *ConfigStoreService
+	mu          gosync.RWMutex
+	fetched     bool
 
 	// In-memory queues for web orders by status
 	pendingOrders   []model.OrderWithItems
@@ -28,10 +29,11 @@ type WebOrderService struct {
 }
 
 // NewWebOrderService creates a new WebOrderService.
-func NewWebOrderService(db *sqlx.DB, apiClient *posSync.APIClient) *WebOrderService {
+func NewWebOrderService(db *sqlx.DB, apiClient *posSync.APIClient, configStore *ConfigStoreService) *WebOrderService {
 	return &WebOrderService{
-		db:        db,
-		apiClient: apiClient,
+		db:          db,
+		apiClient:   apiClient,
+		configStore: configStore,
 	}
 }
 
@@ -139,26 +141,40 @@ func (s *WebOrderService) FetchPendingFromAPI() error {
 }
 
 // AcceptOrder accepts a pending order, triggers stock deduction, and updates the API.
+// When kitchen mode is off, the order is also immediately completed.
 func (s *WebOrderService) AcceptOrder(orderID string) error {
-	// Update status on API
+	// Update status on API to "accepted"
 	if err := s.apiClient.UpdateOrderStatus(orderID, "accepted"); err != nil {
 		return fmt.Errorf("failed to accept order: %w", err)
+	}
+
+	// If kitchen mode is off, immediately complete the order too
+	skipKitchen := !s.configStore.IsKitchenModeEnabled()
+	if skipKitchen {
+		if err := s.apiClient.UpdateOrderStatus(orderID, "completed"); err != nil {
+			return fmt.Errorf("failed to complete order: %w", err)
+		}
 	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Move from pending to accepted
+	// Move from pending to accepted (or completed if skipping kitchen)
 	for i, o := range s.pendingOrders {
 		if o.ID == orderID {
-			o.Status = "accepted"
-			s.acceptedOrders = append(s.acceptedOrders, o)
+			if skipKitchen {
+				o.Status = "completed"
+				s.completedOrders = append(s.completedOrders, o)
+			} else {
+				o.Status = "accepted"
+				s.acceptedOrders = append(s.acceptedOrders, o)
+			}
 			s.pendingOrders = append(s.pendingOrders[:i], s.pendingOrders[i+1:]...)
 
 			// Insert into local SQLite + recipe-based stock deduction
 			s.insertLocalOrder(o)
 
-			slog.Info("web-orders: order accepted", "order_id", orderID)
+			slog.Info("web-orders: order accepted", "order_id", orderID, "skip_kitchen", skipKitchen)
 			return nil
 		}
 	}
@@ -225,8 +241,8 @@ func (s *WebOrderService) insertLocalOrder(order model.OrderWithItems) {
 	// Insert order
 	_, err = tx.Exec(
 		`INSERT OR IGNORE INTO orders (id, order_number, source, table_number, status, total, payment_method, created_at, synced)
-		 VALUES (?, ?, 'web_menu', ?, 'accepted', ?, 'web', ?, 1)`,
-		order.ID, order.OrderNumber, order.TableNumber, order.Total, order.CreatedAt,
+		 VALUES (?, ?, 'web_menu', ?, ?, ?, 'web', ?, 1)`,
+		order.ID, order.OrderNumber, order.TableNumber, order.Status, order.Total, order.CreatedAt,
 	)
 	if err != nil {
 		slog.Warn("web-orders: failed to insert local order", "error", err)

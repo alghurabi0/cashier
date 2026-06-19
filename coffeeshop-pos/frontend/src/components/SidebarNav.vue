@@ -6,6 +6,7 @@ const props = defineProps<{
   pendingWebOrders: number
   userRole: string  // 'admin', 'cashier', or 'kitchen'
   userName: string
+  kitchenModeEnabled: boolean
 }>()
 
 const emit = defineEmits<{
@@ -24,7 +25,10 @@ const allNavItems = [
 ]
 
 const navItems = computed(() =>
-  allNavItems.filter(item => item.roles.includes(props.userRole))
+  allNavItems.filter(item => {
+    if (item.id === 'kitchen' && !props.kitchenModeEnabled) return false
+    return item.roles.includes(props.userRole)
+  })
 )
 </script>
 
