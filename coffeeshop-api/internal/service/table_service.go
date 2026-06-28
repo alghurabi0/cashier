@@ -18,12 +18,12 @@ func NewTableService(tableRepo *repository.TableRepository) *TableService {
 	return &TableService{tableRepo: tableRepo}
 }
 
-// List returns all active tables.
-func (s *TableService) List() ([]model.Table, error) {
-	return s.tableRepo.List()
+// List returns all active tables for a tenant.
+func (s *TableService) List(tenantID uuid.UUID) ([]model.Table, error) {
+	return s.tableRepo.List(tenantID)
 }
 
-// GetByToken validates and returns a table by its token.
+// GetByToken validates and returns a table by its token (no tenant needed — token is globally unique).
 func (s *TableService) GetByToken(token string) (*model.Table, error) {
 	if token == "" {
 		return nil, fmt.Errorf("token is required")
@@ -31,15 +31,15 @@ func (s *TableService) GetByToken(token string) (*model.Table, error) {
 	return s.tableRepo.GetByToken(token)
 }
 
-// Create creates a new table.
-func (s *TableService) Create(req model.CreateTableRequest) (*model.Table, error) {
+// Create creates a new table under a tenant.
+func (s *TableService) Create(tenantID uuid.UUID, req model.CreateTableRequest) (*model.Table, error) {
 	if req.Number == "" {
 		return nil, &ValidationError{Errors: map[string]string{"number": "is required"}}
 	}
-	return s.tableRepo.Create(req.Number)
+	return s.tableRepo.Create(tenantID, req.Number, req.ID)
 }
 
-// Delete soft-deletes a table.
-func (s *TableService) Delete(id uuid.UUID) error {
-	return s.tableRepo.Delete(id)
+// Delete soft-deletes a table (tenant-scoped).
+func (s *TableService) Delete(tenantID uuid.UUID, id uuid.UUID) error {
+	return s.tableRepo.Delete(tenantID, id)
 }

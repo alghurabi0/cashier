@@ -10,6 +10,10 @@ import { Create as $Create } from "@wailsio/runtime";
  */
 export class APIConnection {
     "api_url": string;
+
+    /**
+     * format: "user@tenant-slug"
+     */
     "username": string;
     "password": string;
 

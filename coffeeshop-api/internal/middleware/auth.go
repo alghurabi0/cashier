@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type contextKey string
@@ -15,11 +16,14 @@ const (
 	UserIDKey contextKey = "user_id"
 	// UserRoleKey is the context key for the authenticated user's role.
 	UserRoleKey contextKey = "user_role"
+	// TenantIDKey is the context key for the authenticated user's tenant.
+	TenantIDKey contextKey = "tenant_id"
+	// DeviceIDKey is the context key for the POS device making the request.
+	DeviceIDKey contextKey = "device_id"
 )
 
 // Auth validates the JWT token from the Authorization header and injects
-// the user ID and role into the request context.
-// Returns a function that wraps an http.HandlerFunc (for use with HandleFunc).
+// the user ID, role, and tenant ID into the request context.
 func Auth(jwtSecret string) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -56,9 +60,16 @@ func Auth(jwtSecret string) func(http.HandlerFunc) http.HandlerFunc {
 
 			userID, _ := claims["sub"].(string)
 			role, _ := claims["role"].(string)
+			tenantID, _ := claims["tenant_id"].(string)
 
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			ctx = context.WithValue(ctx, UserRoleKey, role)
+			ctx = context.WithValue(ctx, TenantIDKey, tenantID)
+
+			// Read optional X-Device-ID header from POS terminals
+			if deviceID := r.Header.Get("X-Device-ID"); deviceID != "" {
+				ctx = context.WithValue(ctx, DeviceIDKey, deviceID)
+			}
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
@@ -75,4 +86,25 @@ func GetUserID(ctx context.Context) string {
 func GetUserRole(ctx context.Context) string {
 	role, _ := ctx.Value(UserRoleKey).(string)
 	return role
+}
+
+// GetTenantID extracts the tenant ID from the request context as a UUID.
+func GetTenantID(ctx context.Context) uuid.UUID {
+	id, _ := ctx.Value(TenantIDKey).(string)
+	parsed, _ := uuid.Parse(id)
+	return parsed
+}
+
+// GetDeviceID extracts the device ID from the request context as a UUID pointer.
+// Returns nil if no X-Device-ID header was provided.
+func GetDeviceID(ctx context.Context) *uuid.UUID {
+	id, _ := ctx.Value(DeviceIDKey).(string)
+	if id == "" {
+		return nil
+	}
+	parsed, err := uuid.Parse(id)
+	if err != nil {
+		return nil
+	}
+	return &parsed
 }

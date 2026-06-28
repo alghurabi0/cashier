@@ -1,13 +1,19 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // RecipeIngredient links a MenuItem to an InventoryItem with a quantity.
 type RecipeIngredient struct {
 	ID              uuid.UUID `db:"id"                json:"id"`
+	TenantID        uuid.UUID `db:"tenant_id"         json:"tenant_id"`
 	MenuItemID      uuid.UUID `db:"menu_item_id"      json:"menu_item_id"`
 	InventoryItemID uuid.UUID `db:"inventory_item_id" json:"inventory_item_id"`
 	Quantity        int       `db:"quantity"           json:"quantity"`
+	UpdatedAt       time.Time `db:"updated_at"         json:"updated_at"`
 }
 
 // RecipeIngredientWithDetails extends RecipeIngredient with inventory item info

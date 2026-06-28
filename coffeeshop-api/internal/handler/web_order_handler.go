@@ -24,9 +24,8 @@ func NewWebOrderHandler(orderService *service.OrderService, tableService *servic
 }
 
 // Create handles POST /api/v1/web-orders?token={table_token}
-// Validates the table token, creates an order, and pushes it via SSE.
+// The table token resolves the tenant — no JWT auth needed.
 func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
-	// Validate table token
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		Error(w, http.StatusUnauthorized, "table token required")
@@ -39,14 +38,13 @@ func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decode order request
 	var req model.WebOrderRequest
 	if !DecodeJSON(w, r, &req) {
 		return
 	}
 
-	// Create order with server-side price resolution
-	order, err := h.orderService.CreateWebOrder(table.Number, req)
+	// Use the table's tenant_id to scope the order
+	order, err := h.orderService.CreateWebOrder(table.TenantID, table.Number, req)
 	if err != nil {
 		if ve, ok := err.(*service.ValidationError); ok {
 			ValidationError(w, ve.Errors)
@@ -56,7 +54,6 @@ func (h *WebOrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Push to SSE subscribers (POS clients)
 	h.sseHub.Broadcast(sse.Event{
 		Type: "new_order",
 		Data: order,

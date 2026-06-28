@@ -9,10 +9,10 @@ import { t, languages, detectLang } from '../i18n'
 import type { Lang } from '../i18n'
 import type { MenuItem } from '../types'
 
-const props = defineProps<{ tableNumber: string }>()
+const props = defineProps<{ tableNumber: string; tableToken: string }>()
 const emit = defineEmits<{ 'open-cart': [] }>()
 
-const { categories, menuItems, isLoading, loadAll } = useMenu()
+const { categories, menuItems, tenantInfo, tableInfo, isLoading, loadAll } = useMenu()
 const { itemCount, addItem } = useCart()
 
 const selectedCategoryId = ref<string | null>(null)
@@ -46,7 +46,7 @@ const visibleItems = computed(() =>
 const hasMore = computed(() => filteredItems.value.length > 5 && !showAll.value)
 
 onMounted(() => {
-  loadAll()
+  loadAll(props.tableToken)
   document.documentElement.lang = lang.value
   document.documentElement.dir = dir.value
 })
@@ -78,13 +78,12 @@ function openWhatsapp() {
       <div class="header-left">
         <div class="header-icon-wrap">🍽️</div>
         <div class="header-brand">
-          <span class="brand-main">NJ</span>
-          <span class="brand-sub">COFFEE</span>
+          <span class="brand-main">{{ tenantInfo?.name || 'القائمة' }}</span>
         </div>
       </div>
       <div class="table-chip">
         <span>🪑</span>
-        <span>{{ tr.table }} {{ tableNumber }}</span>
+        <span>{{ tr.table }} {{ tableInfo?.number || tableNumber }}</span>
       </div>
     </header>
 

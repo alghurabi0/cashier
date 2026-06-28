@@ -9,6 +9,7 @@ type Category struct {
 	NameAr    string `db:"name_ar"    json:"name_ar"`
 	SortOrder int    `db:"sort_order" json:"sort_order"`
 	IsActive  bool   `db:"is_active"  json:"is_active"`
+	UpdatedAt string `db:"updated_at" json:"updated_at"`
 }
 
 // MenuItem represents a front-of-house product.
@@ -22,6 +23,7 @@ type MenuItem struct {
 	CachedAutoCost  int64  `db:"cached_auto_cost"   json:"cached_auto_cost"`
 	ImagePath       string `db:"image_path"         json:"image_path"`
 	IsActive        bool   `db:"is_active"          json:"is_active"`
+	UpdatedAt       string `db:"updated_at"         json:"updated_at"`
 }
 
 // MenuItemWithCategory extends MenuItem with the category name.
@@ -39,6 +41,7 @@ type InventoryItem struct {
 	LowStockThreshold int    `db:"low_stock_threshold"  json:"low_stock_threshold"`
 	UnitCost          int64  `db:"unit_cost"            json:"unit_cost"`
 	IsActive          bool   `db:"is_active"            json:"is_active"`
+	UpdatedAt         string `db:"updated_at"           json:"updated_at"`
 }
 
 // RecipeIngredient links a MenuItem to an InventoryItem.
@@ -47,6 +50,7 @@ type RecipeIngredient struct {
 	MenuItemID      string `db:"menu_item_id"      json:"menu_item_id"`
 	InventoryItemID string `db:"inventory_item_id" json:"inventory_item_id"`
 	Quantity        int    `db:"quantity"           json:"quantity"`
+	UpdatedAt       string `db:"updated_at"         json:"updated_at"`
 }
 
 // RecipeIngredientWithDetails includes inventory item info for display.
@@ -66,8 +70,10 @@ type Order struct {
 	Status        string `db:"status"         json:"status"`
 	Total         int64  `db:"total"          json:"total"`
 	PaymentMethod string `db:"payment_method" json:"payment_method"`
+	DeviceID      string `db:"device_id"      json:"device_id"`
 	CreatedAt     string `db:"created_at"     json:"created_at"`
-	Synced        bool   `db:"synced"         json:"synced"`
+	UpdatedAt     string `db:"updated_at"     json:"updated_at"`
+	Synced        int    `db:"synced"         json:"synced"`
 }
 
 // OrderItem represents a single line in an order.
@@ -95,12 +101,13 @@ type CartItem struct {
 	Quantity   int    `json:"quantity"`
 }
 
-// Table represents a restaurant table (from the API).
+// Table represents a restaurant table (local or from the API).
 type Table struct {
-	ID        string `json:"id"`
-	Number    string `json:"number"`
-	Token     string `json:"token"`
-	IsActive  bool   `json:"is_active"`
-	CreatedAt string `json:"created_at"`
+	ID        string `db:"id"         json:"id"`
+	Number    string `db:"number"     json:"number"`
+	Token     string `db:"token"      json:"token"`
+	IsActive  bool   `db:"is_active"  json:"is_active"`
+	Synced    int    `db:"synced"     json:"synced"`
+	CreatedAt string `db:"created_at" json:"created_at"`
 }
 

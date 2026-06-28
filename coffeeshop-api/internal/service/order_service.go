@@ -19,8 +19,8 @@ func NewOrderService(orderRepo *repository.OrderRepository) *OrderService {
 	return &OrderService{orderRepo: orderRepo}
 }
 
-// Create validates and creates a new order (pushed from POS).
-func (s *OrderService) Create(req model.CreateOrderRequest) (*model.OrderWithItems, error) {
+// Create validates and creates a new order (pushed from POS, tenant-scoped).
+func (s *OrderService) Create(tenantID uuid.UUID, deviceID *uuid.UUID, req model.CreateOrderRequest) (*model.OrderWithItems, error) {
 	errors := make(map[string]string)
 
 	if req.ID == uuid.Nil {
@@ -43,20 +43,20 @@ func (s *OrderService) Create(req model.CreateOrderRequest) (*model.OrderWithIte
 		return nil, &ValidationError{Errors: errors}
 	}
 
-	return s.orderRepo.Create(req)
+	return s.orderRepo.Create(tenantID, deviceID, req)
 }
 
-// UpdateStatus updates an order's status with transition validation.
-func (s *OrderService) UpdateStatus(id uuid.UUID, status string) (*model.Order, error) {
+// UpdateStatus updates an order's status with transition validation (tenant-scoped).
+func (s *OrderService) UpdateStatus(tenantID uuid.UUID, id uuid.UUID, status string) (*model.Order, error) {
 	validStatuses := map[string]bool{"accepted": true, "rejected": true, "completed": true}
 	if !validStatuses[status] {
 		return nil, &ValidationError{Errors: map[string]string{"status": "must be accepted, rejected, or completed"}}
 	}
-	return s.orderRepo.UpdateStatus(id, status)
+	return s.orderRepo.UpdateStatus(tenantID, id, status)
 }
 
-// CreateWebOrder validates and creates an order from the web menu.
-func (s *OrderService) CreateWebOrder(tableNumber string, req model.WebOrderRequest) (*model.OrderWithItems, error) {
+// CreateWebOrder validates and creates an order from the web menu (tenant-scoped).
+func (s *OrderService) CreateWebOrder(tenantID uuid.UUID, tableNumber string, req model.WebOrderRequest) (*model.OrderWithItems, error) {
 	errors := make(map[string]string)
 	if tableNumber == "" {
 		errors["table"] = "table number is required"
@@ -75,11 +75,11 @@ func (s *OrderService) CreateWebOrder(tableNumber string, req model.WebOrderRequ
 	if len(errors) > 0 {
 		return nil, &ValidationError{Errors: errors}
 	}
-	return s.orderRepo.CreateWebOrder(tableNumber, req.Items)
+	return s.orderRepo.CreateWebOrder(tenantID, tableNumber, req.Items)
 }
 
-// ListByDateRange returns orders in a date range. from/to should be "YYYY-MM-DD".
-func (s *OrderService) ListByDateRange(from, to string) ([]model.OrderWithItems, error) {
+// ListByDateRange returns orders in a date range (tenant-scoped).
+func (s *OrderService) ListByDateRange(tenantID uuid.UUID, from, to string) ([]model.OrderWithItems, error) {
 	layout := "2006-01-02"
 	fromTime, err := time.Parse(layout, from)
 	if err != nil {
@@ -92,6 +92,11 @@ func (s *OrderService) ListByDateRange(from, to string) ([]model.OrderWithItems,
 	if fromTime.After(toTime) {
 		return nil, &ValidationError{Errors: map[string]string{"from": "must be before or equal to 'to'"}}
 	}
-	return s.orderRepo.ListByDateRange(fromTime, toTime)
+	return s.orderRepo.ListByDateRange(tenantID, fromTime, toTime)
 }
 
+// ListSince returns all orders modified since the given time (tenant-scoped).
+// Used for delta-sync by POS terminals.
+func (s *OrderService) ListSince(tenantID uuid.UUID, since time.Time) ([]model.OrderWithItems, error) {
+	return s.orderRepo.FindAllSince(tenantID, since)
+}

@@ -25,8 +25,12 @@ export interface HistoryOrderItem {
 const orders = ref<HistoryOrder[]>([])
 const selectedOrder = ref<HistoryOrder | null>(null)
 const isLoading = ref(false)
-const dateFrom = ref(new Date().toISOString().split('T')[0])
-const dateTo = ref(new Date().toISOString().split('T')[0])
+function localDateStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+const dateFrom = ref(localDateStr())
+const dateTo = ref(localDateStr())
 
 export function useOrderHistory() {
   async function initBindings() {

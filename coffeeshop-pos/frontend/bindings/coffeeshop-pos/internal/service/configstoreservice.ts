@@ -32,6 +32,27 @@ export function GetAPIConnection(): $CancellablePromise<$models.APIConnection> {
 }
 
 /**
+ * GetDeviceID returns the stored device ID for this POS instance.
+ */
+export function GetDeviceID(): $CancellablePromise<string> {
+    return $Call.ByID(2759179399);
+}
+
+/**
+ * GetTenantID returns the stored tenant ID.
+ */
+export function GetTenantID(): $CancellablePromise<string> {
+    return $Call.ByID(379449781);
+}
+
+/**
+ * GetTenantName returns the stored tenant display name.
+ */
+export function GetTenantName(): $CancellablePromise<string> {
+    return $Call.ByID(391265867);
+}
+
+/**
  * IsKitchenModeEnabled returns whether the kitchen preparation step is active.
  * Default is false (orders go directly to 'completed').
  */
@@ -54,6 +75,13 @@ export function Set(key: string, value: string): $CancellablePromise<void> {
 }
 
 /**
+ * SetDeviceID stores the device ID and updates the API client.
+ */
+export function SetDeviceID(deviceID: string): $CancellablePromise<void> {
+    return $Call.ByID(3796275355, deviceID);
+}
+
+/**
  * SetKitchenModeEnabled updates the kitchen mode setting.
  */
 export function SetKitchenModeEnabled(enabled: boolean): $CancellablePromise<void> {
@@ -62,7 +90,7 @@ export function SetKitchenModeEnabled(enabled: boolean): $CancellablePromise<voi
 
 /**
  * SetupAPIConnection validates the API connection, stores credentials, and logs in.
- * This is called from the setup wizard and the settings panel.
+ * Username should be in the format "user@tenant-slug".
  */
 export function SetupAPIConnection(apiURL: string, username: string, password: string): $CancellablePromise<void> {
     return $Call.ByID(1510919227, apiURL, username, password);

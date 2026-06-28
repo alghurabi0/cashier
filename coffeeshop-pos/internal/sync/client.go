@@ -19,6 +19,7 @@ import (
 type APIClient struct {
 	baseURL    string
 	token      string
+	deviceID   string
 	httpClient *http.Client
 }
 
@@ -32,6 +33,11 @@ func NewAPIClient(baseURL string) *APIClient {
 	}
 }
 
+// SetDeviceID sets the device ID sent via X-Device-ID header.
+func (c *APIClient) SetDeviceID(deviceID string) {
+	c.deviceID = deviceID
+}
+
 // SetToken sets the JWT auth token for subsequent requests.
 func (c *APIClient) SetToken(token string) {
 	c.token = token
@@ -42,30 +48,44 @@ func (c *APIClient) SetBaseURL(baseURL string) {
 	c.baseURL = strings.TrimRight(baseURL, "/")
 }
 
+// LoginResponse contains the data returned after a successful login.
+type LoginResponse struct {
+	Token  string `json:"token"`
+	Tenant struct {
+		ID       string `json:"id"`
+		Name     string `json:"name"`
+		Slug     string `json:"slug"`
+		Settings struct {
+			KitchenModeEnabled     bool   `json:"kitchen_mode_enabled"`
+			ConflictResolutionMode string `json:"conflict_resolution_mode"`
+		} `json:"settings"`
+	} `json:"tenant"`
+}
+
 // Login authenticates with the API and stores the returned token.
-func (c *APIClient) Login(username, password string) error {
+// Username should be in the format "user@tenant-slug".
+func (c *APIClient) Login(username, password string) (*LoginResponse, error) {
 	body := fmt.Sprintf(`{"username":%q,"password":%q}`, username, password)
 	resp, err := c.doRequest("POST", "/api/v1/auth/login", strings.NewReader(body))
 	if err != nil {
-		return fmt.Errorf("login failed: %w", err)
+		return nil, fmt.Errorf("login failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("login failed with status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("login failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	var result struct {
-		Data struct {
-			Token string `json:"token"`
-		} `json:"data"`
+		Data LoginResponse `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return fmt.Errorf("failed to decode login response: %w", err)
+		return nil, fmt.Errorf("failed to decode login response: %w", err)
 	}
 
 	c.token = result.Data.Token
-	return nil
+	return &result.Data, nil
 }
 
 // GetCategories fetches all active categories from the API.
@@ -73,9 +93,19 @@ func (c *APIClient) GetCategories() ([]model.Category, error) {
 	return fetchList[model.Category](c, "/api/v1/categories")
 }
 
+// GetCategoriesSince fetches categories modified since the given timestamp.
+func (c *APIClient) GetCategoriesSince(since string) ([]model.Category, error) {
+	return fetchList[model.Category](c, "/api/v1/categories?since="+since)
+}
+
 // GetMenuItems fetches all active menu items from the API.
 func (c *APIClient) GetMenuItems() ([]model.MenuItemWithCategory, error) {
 	return fetchList[model.MenuItemWithCategory](c, "/api/v1/menu-items")
+}
+
+// GetMenuItemsSince fetches menu items modified since the given timestamp.
+func (c *APIClient) GetMenuItemsSince(since string) ([]model.MenuItemWithCategory, error) {
+	return fetchList[model.MenuItemWithCategory](c, "/api/v1/menu-items?since="+since)
 }
 
 // GetInventoryItems fetches all active inventory items from the API.
@@ -83,14 +113,34 @@ func (c *APIClient) GetInventoryItems() ([]model.InventoryItem, error) {
 	return fetchList[model.InventoryItem](c, "/api/v1/inventory")
 }
 
+// GetInventoryItemsSince fetches inventory items modified since the given timestamp.
+func (c *APIClient) GetInventoryItemsSince(since string) ([]model.InventoryItem, error) {
+	return fetchList[model.InventoryItem](c, "/api/v1/inventory?since="+since)
+}
+
 // GetRecipe fetches the recipe for a specific menu item.
 func (c *APIClient) GetRecipe(menuItemID string) ([]model.RecipeIngredientWithDetails, error) {
 	return fetchList[model.RecipeIngredientWithDetails](c, "/api/v1/menu-items/"+menuItemID+"/recipe")
 }
 
+// GetAllRecipes fetches all recipe ingredients in bulk.
+func (c *APIClient) GetAllRecipes() ([]model.RecipeIngredientWithDetails, error) {
+	return fetchList[model.RecipeIngredientWithDetails](c, "/api/v1/recipes")
+}
+
+// GetAllRecipesSince fetches recipe ingredients for menu items modified since the given timestamp.
+func (c *APIClient) GetAllRecipesSince(since string) ([]model.RecipeIngredientWithDetails, error) {
+	return fetchList[model.RecipeIngredientWithDetails](c, "/api/v1/recipes?since="+since)
+}
+
 // GetOrders fetches orders from the central API for a date range.
 func (c *APIClient) GetOrders(from, to string) ([]model.OrderWithItems, error) {
 	return fetchList[model.OrderWithItems](c, "/api/v1/orders?from="+from+"&to="+to)
+}
+
+// GetOrdersSince fetches orders modified since the given timestamp (for delta sync).
+func (c *APIClient) GetOrdersSince(since string) ([]model.OrderWithItems, error) {
+	return fetchList[model.OrderWithItems](c, "/api/v1/orders?since="+since)
 }
 
 // fetchList is a generic helper for fetching list endpoints.
@@ -129,16 +179,26 @@ func putJSON[T any](c *APIClient, path string, payload any) (*T, error) {
 }
 
 func writeJSON[T any](c *APIClient, method, path string, payload any, expectedStatus int) (*T, error) {
+	return writeJSONWithHeaders[T](c, method, path, payload, expectedStatus, nil)
+}
+
+// writeJSONWithHeaders sends a JSON request with optional extra headers.
+func writeJSONWithHeaders[T any](c *APIClient, method, path string, payload any, expectedStatus int, headers map[string]string) (*T, error) {
 	jsonBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal payload: %w", err)
 	}
 
-	resp, err := c.doRequest(method, path, bytes.NewReader(jsonBytes))
+	resp, err := c.doRequestWithHeaders(method, path, bytes.NewReader(jsonBytes), headers)
 	if err != nil {
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusConflict {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, &SyncConflictError{StatusCode: 409, Body: string(bodyBytes)}
+	}
 
 	if resp.StatusCode != expectedStatus {
 		bodyBytes, _ := io.ReadAll(resp.Body)
@@ -153,6 +213,22 @@ func writeJSON[T any](c *APIClient, method, path string, payload any, expectedSt
 	}
 
 	return &result.Data, nil
+}
+
+// SyncConflictError represents a 409 Conflict response from the API.
+type SyncConflictError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *SyncConflictError) Error() string {
+	return fmt.Sprintf("conflict (409): %s", e.Body)
+}
+
+// putJSONVersioned sends a PUT with an X-Expected-Version header for optimistic concurrency.
+func putJSONVersioned[T any](c *APIClient, path string, payload any, baseVersion string) (*T, error) {
+	headers := map[string]string{"X-Expected-Version": baseVersion}
+	return writeJSONWithHeaders[T](c, "PUT", path, payload, http.StatusOK, headers)
 }
 
 // doDelete sends a DELETE request and returns an error if it fails.
@@ -174,6 +250,7 @@ func (c *APIClient) doDelete(path string) error {
 
 // InventoryPayload is the JSON body for creating/updating an inventory item.
 type InventoryPayload struct {
+	ID                string `json:"id,omitempty"`
 	NameAr            string `json:"name_ar"`
 	BaseUnitAr        string `json:"base_unit_ar"`
 	StockQty          int    `json:"stock_qty"`
@@ -189,15 +266,20 @@ func (c *APIClient) UpdateInventoryItem(id string, p InventoryPayload) (*model.I
 	return putJSON[model.InventoryItem](c, "/api/v1/inventory/"+id, p)
 }
 
+func (c *APIClient) UpdateInventoryItemVersioned(id string, p InventoryPayload, baseVersion string) (*model.InventoryItem, error) {
+	return putJSONVersioned[model.InventoryItem](c, "/api/v1/inventory/"+id, p, baseVersion)
+}
+
 func (c *APIClient) DeleteInventoryItem(id string) error {
 	return c.doDelete("/api/v1/inventory/" + id)
 }
 
 // StockAdjustPayload is the JSON body for POST /api/v1/inventory/adjust.
 type StockAdjustPayload struct {
+	ID              string `json:"id,omitempty"`
 	InventoryItemID string `json:"inventory_item_id"`
 	Delta           int    `json:"delta"`
-	Reason          string `json:"reason"`
+	Reason          string `json:"reason_ar"`
 }
 
 func (c *APIClient) AdjustStock(p StockAdjustPayload) error {
@@ -249,6 +331,7 @@ func (c *APIClient) SetRecipe(menuItemID string, ingredients []RecipeIngredientP
 
 // MenuItemPayload is the JSON body for creating/updating a menu item.
 type MenuItemPayload struct {
+	ID              string `json:"id,omitempty"`
 	CategoryID      string `json:"category_id"`
 	NameAr          string `json:"name_ar"`
 	Price           int64  `json:"price"`
@@ -265,6 +348,10 @@ func (c *APIClient) UpdateMenuItem(id string, p MenuItemPayload) (*model.MenuIte
 	return putJSON[model.MenuItemWithCategory](c, "/api/v1/menu-items/"+id, p)
 }
 
+func (c *APIClient) UpdateMenuItemVersioned(id string, p MenuItemPayload, baseVersion string) (*model.MenuItemWithCategory, error) {
+	return putJSONVersioned[model.MenuItemWithCategory](c, "/api/v1/menu-items/"+id, p, baseVersion)
+}
+
 func (c *APIClient) DeleteMenuItem(id string) error {
 	return c.doDelete("/api/v1/menu-items/" + id)
 }
@@ -273,6 +360,7 @@ func (c *APIClient) DeleteMenuItem(id string) error {
 
 // CategoryPayload is the JSON body for creating/updating a category.
 type CategoryPayload struct {
+	ID        string `json:"id,omitempty"`
 	NameAr    string `json:"name_ar"`
 	SortOrder int    `json:"sort_order"`
 }
@@ -283,6 +371,10 @@ func (c *APIClient) CreateCategory(p CategoryPayload) (*model.Category, error) {
 
 func (c *APIClient) UpdateCategory(id string, p CategoryPayload) (*model.Category, error) {
 	return putJSON[model.Category](c, "/api/v1/categories/"+id, p)
+}
+
+func (c *APIClient) UpdateCategoryVersioned(id string, p CategoryPayload, baseVersion string) (*model.Category, error) {
+	return putJSONVersioned[model.Category](c, "/api/v1/categories/"+id, p, baseVersion)
 }
 
 func (c *APIClient) DeleteCategory(id string) error {
@@ -347,6 +439,10 @@ func (c *APIClient) PushOrder(payload OrderPushPayload) (*OrderPushResponse, err
 }
 
 func (c *APIClient) doRequest(method, path string, body io.Reader) (*http.Response, error) {
+	return c.doRequestWithHeaders(method, path, body, nil)
+}
+
+func (c *APIClient) doRequestWithHeaders(method, path string, body io.Reader, extraHeaders map[string]string) (*http.Response, error) {
 	url := c.baseURL + path
 
 	req, err := http.NewRequest(method, url, body)
@@ -357,6 +453,12 @@ func (c *APIClient) doRequest(method, path string, body io.Reader) (*http.Respon
 	req.Header.Set("Content-Type", "application/json")
 	if c.token != "" {
 		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	if c.deviceID != "" {
+		req.Header.Set("X-Device-ID", c.deviceID)
+	}
+	for k, v := range extraHeaders {
+		req.Header.Set(k, v)
 	}
 
 	return c.httpClient.Do(req)
@@ -389,6 +491,7 @@ func (c *APIClient) UpdateOrderStatus(orderID string, status string) error {
 
 // TablePayload is the body for creating a table.
 type TablePayload struct {
+	ID     string `json:"id,omitempty"`
 	Number string `json:"number"`
 }
 
@@ -448,10 +551,20 @@ func (c *APIClient) UploadImage(filePath string) (string, error) {
 	}
 
 	var result struct {
-		URL string `json:"url"`
+		URL  string `json:"url"`
+		Data struct {
+			URL string `json:"url"`
+		} `json:"data"`
 	}
 	if err := json.Unmarshal(body, &result); err != nil {
 		return "", fmt.Errorf("failed to parse upload response: %w", err)
 	}
-	return result.URL, nil
+	url := result.Data.URL
+	if url == "" {
+		url = result.URL
+	}
+	if url == "" {
+		return "", fmt.Errorf("upload response did not include an image URL")
+	}
+	return url, nil
 }

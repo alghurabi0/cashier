@@ -8,6 +8,7 @@ import * as ManagementService from "./managementservice.js";
 import * as OrderService from "./orderservice.js";
 import * as ReceiptService from "./receiptservice.js";
 import * as ReportService from "./reportservice.js";
+import * as SyncService from "./syncservice.js";
 import * as WebOrderService from "./weborderservice.js";
 export {
     AuthService,
@@ -17,6 +18,7 @@ export {
     OrderService,
     ReceiptService,
     ReportService,
+    SyncService,
     WebOrderService
 };
 

@@ -121,6 +121,11 @@ export function useManagement() {
     }
   }
 
+  async function uploadMenuItemImage(filePath: string): Promise<string> {
+    if (!ManagementService) throw new Error('Management service unavailable')
+    return await ManagementService.UploadMenuItemImage(filePath)
+  }
+
   async function deleteMenuItem(id: string) {
     if (!ManagementService) throw new Error('Management service unavailable')
     isLoading.value = true
@@ -227,6 +232,7 @@ export function useManagement() {
     deleteCategory,
     createMenuItem,
     updateMenuItem,
+    uploadMenuItemImage,
     deleteMenuItem,
     createInventoryItem,
     updateInventoryItem,

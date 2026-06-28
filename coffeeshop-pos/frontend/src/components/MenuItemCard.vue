@@ -1,20 +1,37 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import type { MenuItem } from '../types'
 import { formatPrice } from '../types'
 
-defineProps<{
+const props = defineProps<{
   item: MenuItem
 }>()
 
 const emit = defineEmits<{
   add: [item: MenuItem]
 }>()
+
+const imageSrc = ref('')
+
+let DataService: any = null
+
+onMounted(async () => {
+  if (!props.item.image_path) return
+  try {
+    DataService = await import('../../bindings/coffeeshop-pos/internal/service/dataservice')
+    const dataURI = await DataService.GetImageDataURI(props.item.image_path)
+    if (dataURI) imageSrc.value = dataURI
+  } catch {
+    // fall back to direct URL
+    imageSrc.value = props.item.image_path
+  }
+})
 </script>
 
 <template>
   <button class="item-card" @click="emit('add', item)">
-    <img v-if="item.image_path" :src="item.image_path" :alt="item.name_ar" class="card-img" loading="lazy" />
-    <div class="card-overlay" v-if="item.image_path"></div>
+    <img v-if="imageSrc" :src="imageSrc" :alt="item.name_ar" class="card-img" loading="lazy" />
+    <div class="card-overlay" v-if="imageSrc"></div>
     <div class="card-body">
       <span class="item-name">{{ item.name_ar }}</span>
       <span class="item-price">{{ formatPrice(item.price) }} <small>د.ع</small></span>

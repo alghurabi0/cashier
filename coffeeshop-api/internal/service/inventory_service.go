@@ -3,7 +3,9 @@ package service
 import (
 	"coffeeshop-api/internal/model"
 	"coffeeshop-api/internal/repository"
+	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -28,18 +30,23 @@ func NewInventoryService(
 	}
 }
 
-// List returns all active inventory items.
-func (s *InventoryService) List() ([]model.InventoryItem, error) {
-	return s.inventoryRepo.FindAll()
+// List returns all active inventory items for a tenant.
+func (s *InventoryService) List(tenantID uuid.UUID) ([]model.InventoryItem, error) {
+	return s.inventoryRepo.FindAll(tenantID)
 }
 
-// Get returns a single inventory item by ID.
-func (s *InventoryService) Get(id uuid.UUID) (*model.InventoryItem, error) {
-	return s.inventoryRepo.FindByID(id)
+// ListSince returns all inventory items (including inactive) modified since the given time.
+func (s *InventoryService) ListSince(tenantID uuid.UUID, since time.Time) ([]model.InventoryItem, error) {
+	return s.inventoryRepo.FindAllSince(tenantID, since)
 }
 
-// Create validates and creates a new inventory item.
-func (s *InventoryService) Create(req model.CreateInventoryItemRequest) (*model.InventoryItem, error) {
+// Get returns a single inventory item by ID (tenant-scoped).
+func (s *InventoryService) Get(tenantID uuid.UUID, id uuid.UUID) (*model.InventoryItem, error) {
+	return s.inventoryRepo.FindByID(tenantID, id)
+}
+
+// Create validates and creates a new inventory item under a tenant.
+func (s *InventoryService) Create(tenantID uuid.UUID, req model.CreateInventoryItemRequest) (*model.InventoryItem, error) {
 	errors := make(map[string]string)
 
 	if req.NameAr == "" {
@@ -59,20 +66,18 @@ func (s *InventoryService) Create(req model.CreateInventoryItemRequest) (*model.
 		return nil, &ValidationError{Errors: errors}
 	}
 
-	return s.inventoryRepo.Create(req.NameAr, req.BaseUnitAr, req.StockQty, req.LowStockThreshold, req.UnitCost)
+	return s.inventoryRepo.Create(tenantID, req.NameAr, req.BaseUnitAr, req.StockQty, req.LowStockThreshold, req.UnitCost, req.ID)
 }
 
-// Update validates and updates an existing inventory item.
-// If unit_cost changes, recalculates cached_auto_cost for all affected menu items.
-func (s *InventoryService) Update(id uuid.UUID, req model.UpdateInventoryItemRequest) (*model.InventoryItem, error) {
-	existing, err := s.inventoryRepo.FindByID(id)
+// Update validates and updates an existing inventory item (tenant-scoped).
+func (s *InventoryService) Update(tenantID uuid.UUID, id uuid.UUID, req model.UpdateInventoryItemRequest) (*model.InventoryItem, error) {
+	existing, err := s.inventoryRepo.FindByID(tenantID, id)
 	if err != nil {
 		return nil, fmt.Errorf("inventory item not found")
 	}
 
 	oldUnitCost := existing.UnitCost
 
-	// Merge provided fields
 	if req.NameAr != nil {
 		existing.NameAr = *req.NameAr
 	}
@@ -89,7 +94,6 @@ func (s *InventoryService) Update(id uuid.UUID, req model.UpdateInventoryItemReq
 		existing.IsActive = *req.IsActive
 	}
 
-	// Validate
 	errors := make(map[string]string)
 	if existing.NameAr == "" {
 		errors["name_ar"] = "must not be empty"
@@ -104,15 +108,13 @@ func (s *InventoryService) Update(id uuid.UUID, req model.UpdateInventoryItemReq
 		return nil, &ValidationError{Errors: errors}
 	}
 
-	updated, err := s.inventoryRepo.Update(id, existing.NameAr, existing.BaseUnitAr, existing.LowStockThreshold, existing.UnitCost, existing.IsActive)
+	updated, err := s.inventoryRepo.Update(tenantID, id, existing.NameAr, existing.BaseUnitAr, existing.LowStockThreshold, existing.UnitCost, existing.IsActive)
 	if err != nil {
 		return nil, err
 	}
 
-	// If unit_cost changed, recalculate auto-cost for all menu items using this inventory item
 	if oldUnitCost != existing.UnitCost {
 		if err := s.recalculateAffectedMenuItems(id); err != nil {
-			// Log but don't fail the update
 			fmt.Printf("warning: failed to recalculate auto-costs after unit_cost change: %v\n", err)
 		}
 	}
@@ -120,13 +122,79 @@ func (s *InventoryService) Update(id uuid.UUID, req model.UpdateInventoryItemReq
 	return updated, nil
 }
 
-// Delete soft-deletes an inventory item.
-func (s *InventoryService) Delete(id uuid.UUID) error {
-	return s.inventoryRepo.SoftDelete(id)
+// Delete soft-deletes an inventory item (tenant-scoped).
+func (s *InventoryService) Delete(tenantID uuid.UUID, id uuid.UUID) error {
+	return s.inventoryRepo.SoftDelete(tenantID, id)
 }
 
-// Adjust records a stock adjustment and atomically updates stock_qty.
-func (s *InventoryService) Adjust(req model.CreateStockAdjustmentRequest) (*model.StockAdjustment, error) {
+// UpdateWithVersion validates and updates an inventory item with optimistic concurrency.
+func (s *InventoryService) UpdateWithVersion(tenantID uuid.UUID, id uuid.UUID, req model.UpdateInventoryItemRequest, expectedVersion time.Time) (*model.InventoryItem, error) {
+	existing, err := s.inventoryRepo.FindByID(tenantID, id)
+	if err != nil {
+		return nil, fmt.Errorf("inventory item not found")
+	}
+
+	oldUnitCost := existing.UnitCost
+
+	if req.NameAr != nil {
+		existing.NameAr = *req.NameAr
+	}
+	if req.BaseUnitAr != nil {
+		existing.BaseUnitAr = *req.BaseUnitAr
+	}
+	if req.LowStockThreshold != nil {
+		existing.LowStockThreshold = *req.LowStockThreshold
+	}
+	if req.UnitCost != nil {
+		existing.UnitCost = *req.UnitCost
+	}
+	if req.IsActive != nil {
+		existing.IsActive = *req.IsActive
+	}
+
+	errors := make(map[string]string)
+	if existing.NameAr == "" {
+		errors["name_ar"] = "must not be empty"
+	}
+	if existing.BaseUnitAr == "" {
+		errors["base_unit_ar"] = "must not be empty"
+	}
+	if existing.UnitCost < 0 {
+		errors["unit_cost"] = "must be >= 0"
+	}
+	if len(errors) > 0 {
+		return nil, &ValidationError{Errors: errors}
+	}
+
+	result, err := s.inventoryRepo.UpdateWithVersion(tenantID, id, existing.NameAr, existing.BaseUnitAr, existing.LowStockThreshold, existing.UnitCost, existing.IsActive, expectedVersion)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			current, fetchErr := s.inventoryRepo.FindByID(tenantID, id)
+			serverVersion := time.Time{}
+			if fetchErr == nil {
+				serverVersion = current.UpdatedAt
+			}
+			return nil, &ConflictError{
+				EntityType:    "inventory_item",
+				EntityID:      id.String(),
+				ServerVersion: serverVersion,
+				ClientVersion: expectedVersion,
+			}
+		}
+		return nil, fmt.Errorf("failed to update inventory item: %w", err)
+	}
+
+	if oldUnitCost != existing.UnitCost {
+		if err := s.recalculateAffectedMenuItems(id); err != nil {
+			fmt.Printf("warning: failed to recalculate auto-costs after unit_cost change: %v\n", err)
+		}
+	}
+
+	return result, nil
+}
+
+// Adjust records a stock adjustment and atomically updates stock_qty (tenant-scoped).
+func (s *InventoryService) Adjust(tenantID uuid.UUID, req model.CreateStockAdjustmentRequest) (*model.StockAdjustment, error) {
 	errors := make(map[string]string)
 
 	if req.InventoryItemID == uuid.Nil {
@@ -140,17 +208,15 @@ func (s *InventoryService) Adjust(req model.CreateStockAdjustmentRequest) (*mode
 		return nil, &ValidationError{Errors: errors}
 	}
 
-	// Verify inventory item exists
-	_, err := s.inventoryRepo.FindByID(req.InventoryItemID)
+	_, err := s.inventoryRepo.FindByID(tenantID, req.InventoryItemID)
 	if err != nil {
 		return nil, fmt.Errorf("inventory item not found")
 	}
 
-	return s.inventoryRepo.AdjustStock(req.InventoryItemID, req.Delta, req.ReasonAr)
+	return s.inventoryRepo.AdjustStock(tenantID, req.InventoryItemID, req.Delta, req.ReasonAr, req.ID)
 }
 
-// recalculateAffectedMenuItems finds all menu items that use the given inventory item
-// in their recipe and recalculates their cached_auto_cost.
+// recalculateAffectedMenuItems recalculates cached_auto_cost for menu items using this ingredient.
 func (s *InventoryService) recalculateAffectedMenuItems(inventoryItemID uuid.UUID) error {
 	menuItemIDs, err := s.recipeRepo.FindMenuItemIDsByInventoryItem(inventoryItemID)
 	if err != nil {

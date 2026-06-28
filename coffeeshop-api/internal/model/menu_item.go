@@ -1,11 +1,16 @@
 package model
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 // MenuItem represents a front-of-house product (e.g. "لاتيه").
 // Prices are stored in fils (IQD × 1000) to avoid floating-point errors.
 type MenuItem struct {
 	ID              uuid.UUID `db:"id"                json:"id"`
+	TenantID        uuid.UUID `db:"tenant_id"         json:"tenant_id"`
 	CategoryID      uuid.UUID `db:"category_id"       json:"category_id"`
 	NameAr          string    `db:"name_ar"            json:"name_ar"`
 	Price           int64     `db:"price"              json:"price"`
@@ -14,6 +19,7 @@ type MenuItem struct {
 	CachedAutoCost  int64     `db:"cached_auto_cost"   json:"cached_auto_cost"`
 	ImagePath       string    `db:"image_path"         json:"image_path"`
 	IsActive        bool      `db:"is_active"          json:"is_active"`
+	UpdatedAt       time.Time `db:"updated_at"         json:"updated_at"`
 }
 
 // MenuItemWithCategory extends MenuItem with the category name for list/detail responses.
@@ -24,12 +30,13 @@ type MenuItemWithCategory struct {
 
 // CreateMenuItemRequest is the expected JSON body for creating a menu item.
 type CreateMenuItemRequest struct {
-	CategoryID      uuid.UUID `json:"category_id"`
-	NameAr          string    `json:"name_ar"`
-	Price           int64     `json:"price"`
-	CostCalcMethod  string    `json:"cost_calc_method"`
-	ManualCostPrice int64     `json:"manual_cost_price"`
-	ImagePath       string    `json:"image_path"`
+	ID              *uuid.UUID `json:"id,omitempty"` // Optional: client-generated UUID
+	CategoryID      uuid.UUID  `json:"category_id"`
+	NameAr          string     `json:"name_ar"`
+	Price           int64      `json:"price"`
+	CostCalcMethod  string     `json:"cost_calc_method"`
+	ManualCostPrice int64      `json:"manual_cost_price"`
+	ImagePath       string     `json:"image_path"`
 }
 
 // UpdateMenuItemRequest is the expected JSON body for updating a menu item.

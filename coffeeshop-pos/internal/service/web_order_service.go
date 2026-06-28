@@ -47,6 +47,10 @@ func (s *WebOrderService) HandleSSEEvent(event posSync.SSEEvent) {
 			slog.Warn("web-orders: failed to parse new_order event", "error", err)
 			return
 		}
+		if order.Source != "web_menu" {
+			slog.Debug("web-orders: ignoring non-web order from SSE", "source", order.Source, "order_number", order.OrderNumber)
+			return
+		}
 		s.mu.Lock()
 		s.pendingOrders = append(s.pendingOrders, order)
 		s.mu.Unlock()
@@ -240,9 +244,9 @@ func (s *WebOrderService) insertLocalOrder(order model.OrderWithItems) {
 
 	// Insert order
 	_, err = tx.Exec(
-		`INSERT OR IGNORE INTO orders (id, order_number, source, table_number, status, total, payment_method, created_at, synced)
-		 VALUES (?, ?, 'web_menu', ?, ?, ?, 'web', ?, 1)`,
-		order.ID, order.OrderNumber, order.TableNumber, order.Status, order.Total, order.CreatedAt,
+		`INSERT OR IGNORE INTO orders (id, order_number, source, table_number, status, total, payment_method, created_at, updated_at, synced)
+		 VALUES (?, ?, 'web_menu', ?, ?, ?, 'web', ?, ?, 1)`,
+		order.ID, order.OrderNumber, order.TableNumber, order.Status, order.Total, order.CreatedAt, order.CreatedAt,
 	)
 	if err != nil {
 		slog.Warn("web-orders: failed to insert local order", "error", err)

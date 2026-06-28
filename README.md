@@ -529,3 +529,17 @@ curl -X POST http://localhost:8080/api/v1/tables \
 ```
 
 Then use the returned token: `http://localhost:5173?token=TABLE_TOKEN`
+
+
+
+
+
+
+
+
+
+
+
+POS frontend setup wizard UI update (tenant-slug in login form)
+Device registration UI on first POS launch
+Admin web dashboard for tenant management (marked as TODO)

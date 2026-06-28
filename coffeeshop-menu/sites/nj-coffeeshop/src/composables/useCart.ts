@@ -1,7 +1,9 @@
 import { ref, computed } from 'vue'
+import { CashierMenu } from '@cashier/menu-sdk'
 import type { CartItem, WebOrderResponse } from '../types'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+const sdk = new CashierMenu({ apiUrl: API_BASE })
 
 const items = ref<CartItem[]>([])
 const isSubmitting = ref(false)
@@ -57,27 +59,15 @@ export function useCart() {
     isSubmitting.value = true
     orderError.value = null
 
-    const body = {
-      items: items.value.map(i => ({
-        menu_item_id: i.menu_item_id,
-        quantity: i.quantity,
-      })),
-    }
-
     try {
-      const res = await fetch(`${API_BASE}/api/v1/web-orders?token=${token}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Failed to submit order')
-      }
-
-      const json = await res.json()
-      orderResult.value = json.data
+      const result = await sdk.submitOrder(
+        token,
+        items.value.map(i => ({
+          menu_item_id: i.menu_item_id,
+          quantity: i.quantity,
+        }))
+      )
+      orderResult.value = result as unknown as WebOrderResponse
       clearCart()
     } catch (err: any) {
       orderError.value = err.message

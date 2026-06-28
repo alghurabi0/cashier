@@ -10,6 +10,7 @@ import (
 // Each table has a unique token used for QR-code web menu access.
 type Table struct {
 	ID        uuid.UUID `db:"id"         json:"id"`
+	TenantID  uuid.UUID `db:"tenant_id"  json:"tenant_id"`
 	Number    string    `db:"number"     json:"number"`
 	Token     string    `db:"token"      json:"token"`
 	IsActive  bool      `db:"is_active"  json:"is_active"`
@@ -18,5 +19,6 @@ type Table struct {
 
 // CreateTableRequest is the body for POST /api/v1/tables.
 type CreateTableRequest struct {
-	Number string `json:"number"` // e.g. "1", "A1"
+	ID     *uuid.UUID `json:"id,omitempty"` // Optional: client-generated UUID
+	Number string     `json:"number"`       // e.g. "1", "A1"
 }

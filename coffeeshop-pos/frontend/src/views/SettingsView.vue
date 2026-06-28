@@ -5,31 +5,22 @@ import { useAuth } from '../composables/useAuth'
 import UserManagementPanel from '../components/settings/UserManagementPanel.vue'
 import TableManagementPanel from '../components/settings/TableManagementPanel.vue'
 import APIConnectionPanel from '../components/settings/APIConnectionPanel.vue'
+import SyncDashboardPanel from '../components/settings/SyncDashboardPanel.vue'
 
-const { initBindings, triggerSync, isLoading } = useManagement()
+const { initBindings, isLoading } = useManagement()
 const { currentUser } = useAuth()
 
 const isDevUser = computed(() => currentUser.value?.role === 'dev' || currentUser.value?.role === 'admin')
 
+// Sub-navigation within settings
+const activeTab = ref<'general' | 'sync'>('general')
+
 const shopName = ref('المقهى')
-const syncInterval = ref(30)
-const syncMessage = ref('')
 const menuBaseURL = ref('')
 const menuURLSaved = ref(false)
 const kitchenModeEnabled = ref(false)
 
 let ConfigStoreService: any = null
-
-async function onSync() {
-  syncMessage.value = ''
-  try {
-    await triggerSync()
-    syncMessage.value = '✓ تمت المزامنة بنجاح'
-    setTimeout(() => { syncMessage.value = '' }, 3000)
-  } catch (err: any) {
-    syncMessage.value = '✕ فشلت المزامنة: ' + (err.message || err)
-  }
-}
 
 onMounted(async () => {
   await initBindings()
@@ -70,9 +61,27 @@ async function saveMenuBaseURL() {
   <div class="settings-view">
     <header class="view-header">
       <h1 class="view-title">⚙️ الإعدادات</h1>
+      <!-- Sub-navigation tabs -->
+      <nav class="settings-tabs">
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'general' }"
+          @click="activeTab = 'general'"
+        >
+          🏪 عام
+        </button>
+        <button
+          class="tab-btn"
+          :class="{ active: activeTab === 'sync' }"
+          @click="activeTab = 'sync'"
+        >
+          📡 المزامنة
+        </button>
+      </nav>
     </header>
 
-    <div class="settings-content">
+    <!-- General Settings Tab -->
+    <div v-if="activeTab === 'general'" class="settings-content">
       <div class="settings-section">
         <h2 class="settings-section-title">معلومات المقهى</h2>
         <div class="form-group">
@@ -111,24 +120,6 @@ async function saveMenuBaseURL() {
               <span class="toggle-knob"></span>
             </button>
           </div>
-        </div>
-      </div>
-
-      <div class="settings-divider"></div>
-
-      <div class="settings-section">
-        <h2 class="settings-section-title">المزامنة</h2>
-        <div class="form-group">
-          <label class="form-label">فاصل المزامنة (ثانية)</label>
-          <input v-model.number="syncInterval" type="number" class="form-input" min="10" max="300" style="width: 120px" />
-        </div>
-
-        <button class="btn btn-primary" :disabled="isLoading" @click="onSync">
-          {{ isLoading ? 'جاري المزامنة...' : '🔄 مزامنة الآن' }}
-        </button>
-
-        <div v-if="syncMessage" class="sync-feedback" :class="{ success: syncMessage.startsWith('✓'), error: syncMessage.startsWith('✕') }">
-          {{ syncMessage }}
         </div>
       </div>
 
@@ -185,6 +176,11 @@ async function saveMenuBaseURL() {
         </div>
       </div>
     </div>
+
+    <!-- Sync Dashboard Tab -->
+    <div v-else-if="activeTab === 'sync'" class="settings-content">
+      <SyncDashboardPanel />
+    </div>
   </div>
 </template>
 
@@ -205,13 +201,43 @@ async function saveMenuBaseURL() {
 .view-title {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
+  margin-bottom: var(--gap-md);
+}
+
+/* Settings sub-tabs */
+.settings-tabs {
+  display: flex;
+  gap: var(--gap-xs);
+}
+
+.tab-btn {
+  padding: var(--gap-sm) var(--gap-lg);
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-family);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semi);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.tab-btn.active {
+  background: var(--color-accent);
+  color: white;
 }
 
 .settings-content {
   flex: 1;
   overflow-y: auto;
   padding: var(--gap-xl);
-  max-width: 600px;
+  max-width: 700px;
 }
 
 .settings-section {
@@ -268,23 +294,6 @@ async function saveMenuBaseURL() {
   display: flex;
   gap: var(--gap-sm);
   align-items: center;
-}
-
-.sync-feedback {
-  padding: var(--gap-sm) var(--gap-md);
-  border-radius: var(--radius-sm);
-  font-weight: var(--font-weight-semi);
-  font-size: var(--font-size-sm);
-}
-
-.sync-feedback.success {
-  background: rgba(39, 174, 96, 0.12);
-  color: var(--color-success);
-}
-
-.sync-feedback.error {
-  background: rgba(231, 76, 60, 0.12);
-  color: var(--color-danger);
 }
 
 .about-info {

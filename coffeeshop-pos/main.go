@@ -64,14 +64,24 @@ func main() {
 	authService.SeedDefaultAdmin()
 
 	// Management service (requires apiClient + syncWorker)
-	managementService := service.NewManagementService(apiClient, syncWorker)
+	managementService := service.NewManagementService(db, apiClient, syncWorker)
 
 	// Web order service (manages incoming web menu orders)
 	webOrderService := service.NewWebOrderService(db, apiClient, configStore)
 
-	// SSE client for real-time web order notifications
+	// Sync dashboard service (exposes sync health to frontend)
+	syncService := service.NewSyncService(syncWorker, db)
+
+	// SSE client for real-time cross-POS sync
 	sseClient := posSync.NewSSEClient(apiClient, func(event posSync.SSEEvent) {
+		// Forward web order events to WebOrderService (existing behavior)
 		webOrderService.HandleSSEEvent(event)
+
+		// Trigger immediate sync on relevant events
+		switch event.Type {
+		case "new_order", "order_status", "data_changed":
+			syncWorker.TriggerPull()
+		}
 	})
 
 	// Start sync worker and SSE client in background
@@ -94,6 +104,7 @@ func main() {
 			application.NewService(authService),
 			application.NewService(reportService),
 			application.NewService(configStore),
+			application.NewService(syncService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

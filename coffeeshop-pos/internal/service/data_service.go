@@ -2,10 +2,17 @@ package service
 
 import (
 	"coffeeshop-pos/internal/model"
+	"encoding/base64"
 	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"sync"
 
 	"github.com/jmoiron/sqlx"
 )
+
+var imageCache sync.Map
 
 // DataService is a Wails-bound service that exposes local SQLite data
 // to the frontend. All methods are exported and callable from JavaScript.
@@ -83,6 +90,44 @@ func (s *DataService) GetInventoryItems() ([]model.InventoryItem, error) {
 		return nil, fmt.Errorf("failed to fetch inventory items: %w", err)
 	}
 	return items, nil
+}
+
+// GetImageDataURI fetches an image URL and returns it as a base64 data URI.
+// Results are cached in memory so each URL is fetched only once.
+func (s *DataService) GetImageDataURI(imageURL string) (string, error) {
+	if imageURL == "" {
+		return "", nil
+	}
+
+	if cached, ok := imageCache.Load(imageURL); ok {
+		return cached.(string), nil
+	}
+
+	resp, err := http.Get(imageURL)
+	if err != nil {
+		slog.Warn("failed to fetch image", "url", imageURL, "error", err)
+		return "", fmt.Errorf("failed to fetch image: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("image fetch returned status %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read image body: %w", err)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = http.DetectContentType(body)
+	}
+
+	dataURI := fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(body))
+	imageCache.Store(imageURL, dataURI)
+
+	return dataURI, nil
 }
 
 // GetLastSyncTime returns the last successful sync timestamp from sync_meta.

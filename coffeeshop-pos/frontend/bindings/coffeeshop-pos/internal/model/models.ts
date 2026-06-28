@@ -49,6 +49,7 @@ export class Category {
     "name_ar": string;
     "sort_order": number;
     "is_active": boolean;
+    "updated_at": string;
 
     /** Creates a new Category instance. */
     constructor($$source: Partial<Category> = {}) {
@@ -63,6 +64,9 @@ export class Category {
         }
         if (!("is_active" in $$source)) {
             this["is_active"] = false;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = "";
         }
 
         Object.assign(this, $$source);
@@ -88,6 +92,7 @@ export class InventoryItem {
     "low_stock_threshold": number;
     "unit_cost": number;
     "is_active": boolean;
+    "updated_at": string;
 
     /** Creates a new InventoryItem instance. */
     constructor($$source: Partial<InventoryItem> = {}) {
@@ -111,6 +116,9 @@ export class InventoryItem {
         }
         if (!("is_active" in $$source)) {
             this["is_active"] = false;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = "";
         }
 
         Object.assign(this, $$source);
@@ -138,6 +146,7 @@ export class MenuItemWithCategory {
     "cached_auto_cost": number;
     "image_path": string;
     "is_active": boolean;
+    "updated_at": string;
     "category_name_ar": string;
 
     /** Creates a new MenuItemWithCategory instance. */
@@ -169,6 +178,9 @@ export class MenuItemWithCategory {
         if (!("is_active" in $$source)) {
             this["is_active"] = false;
         }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = "";
+        }
         if (!("category_name_ar" in $$source)) {
             this["category_name_ar"] = "";
         }
@@ -196,8 +208,10 @@ export class Order {
     "status": string;
     "total": number;
     "payment_method": string;
+    "device_id": string;
     "created_at": string;
-    "synced": boolean;
+    "updated_at": string;
+    "synced": number;
 
     /** Creates a new Order instance. */
     constructor($$source: Partial<Order> = {}) {
@@ -222,11 +236,17 @@ export class Order {
         if (!("payment_method" in $$source)) {
             this["payment_method"] = "";
         }
+        if (!("device_id" in $$source)) {
+            this["device_id"] = "";
+        }
         if (!("created_at" in $$source)) {
             this["created_at"] = "";
         }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = "";
+        }
         if (!("synced" in $$source)) {
-            this["synced"] = false;
+            this["synced"] = 0;
         }
 
         Object.assign(this, $$source);
@@ -300,8 +320,10 @@ export class OrderWithItems {
     "status": string;
     "total": number;
     "payment_method": string;
+    "device_id": string;
     "created_at": string;
-    "synced": boolean;
+    "updated_at": string;
+    "synced": number;
     "items": OrderItem[];
 
     /** Creates a new OrderWithItems instance. */
@@ -327,11 +349,17 @@ export class OrderWithItems {
         if (!("payment_method" in $$source)) {
             this["payment_method"] = "";
         }
+        if (!("device_id" in $$source)) {
+            this["device_id"] = "";
+        }
         if (!("created_at" in $$source)) {
             this["created_at"] = "";
         }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = "";
+        }
         if (!("synced" in $$source)) {
-            this["synced"] = false;
+            this["synced"] = 0;
         }
         if (!("items" in $$source)) {
             this["items"] = [];
@@ -344,10 +372,10 @@ export class OrderWithItems {
      * Creates a new OrderWithItems instance from a string or object.
      */
     static createFrom($$source: any = {}): OrderWithItems {
-        const $$createField9_0 = $$createType1;
+        const $$createField11_0 = $$createType1;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("items" in $$parsedSource) {
-            $$parsedSource["items"] = $$createField9_0($$parsedSource["items"]);
+            $$parsedSource["items"] = $$createField11_0($$parsedSource["items"]);
         }
         return new OrderWithItems($$parsedSource as Partial<OrderWithItems>);
     }
@@ -361,6 +389,7 @@ export class RecipeIngredientWithDetails {
     "menu_item_id": string;
     "inventory_item_id": string;
     "quantity": number;
+    "updated_at": string;
     "inventory_name_ar": string;
     "base_unit_ar": string;
     "unit_cost": number;
@@ -378,6 +407,9 @@ export class RecipeIngredientWithDetails {
         }
         if (!("quantity" in $$source)) {
             this["quantity"] = 0;
+        }
+        if (!("updated_at" in $$source)) {
+            this["updated_at"] = "";
         }
         if (!("inventory_name_ar" in $$source)) {
             this["inventory_name_ar"] = "";
@@ -402,13 +434,14 @@ export class RecipeIngredientWithDetails {
 }
 
 /**
- * Table represents a restaurant table (from the API).
+ * Table represents a restaurant table (local or from the API).
  */
 export class Table {
     "id": string;
     "number": string;
     "token": string;
     "is_active": boolean;
+    "synced": number;
     "created_at": string;
 
     /** Creates a new Table instance. */
@@ -424,6 +457,9 @@ export class Table {
         }
         if (!("is_active" in $$source)) {
             this["is_active"] = false;
+        }
+        if (!("synced" in $$source)) {
+            this["synced"] = 0;
         }
         if (!("created_at" in $$source)) {
             this["created_at"] = "";

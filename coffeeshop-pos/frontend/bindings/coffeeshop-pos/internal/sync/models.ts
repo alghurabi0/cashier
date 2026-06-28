@@ -10,6 +10,150 @@ import { Create as $Create } from "@wailsio/runtime";
 import * as json$0 from "../../../encoding/json/models.js";
 
 /**
+ * AuditLogEntry represents a single row from the sync_audit_log table.
+ */
+export class AuditLogEntry {
+    "id": number;
+    "direction": string;
+    "entity_type": string;
+    "entity_id": string;
+    "operation": string;
+    "status": string;
+    "details": string;
+    "count": number;
+    "created_at": string;
+
+    /** Creates a new AuditLogEntry instance. */
+    constructor($$source: Partial<AuditLogEntry> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = 0;
+        }
+        if (!("direction" in $$source)) {
+            this["direction"] = "";
+        }
+        if (!("entity_type" in $$source)) {
+            this["entity_type"] = "";
+        }
+        if (!("entity_id" in $$source)) {
+            this["entity_id"] = "";
+        }
+        if (!("operation" in $$source)) {
+            this["operation"] = "";
+        }
+        if (!("status" in $$source)) {
+            this["status"] = "";
+        }
+        if (!("details" in $$source)) {
+            this["details"] = "";
+        }
+        if (!("count" in $$source)) {
+            this["count"] = 0;
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new AuditLogEntry instance from a string or object.
+     */
+    static createFrom($$source: any = {}): AuditLogEntry {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new AuditLogEntry($$parsedSource as Partial<AuditLogEntry>);
+    }
+}
+
+/**
+ * ConflictRecord represents a detected conflict during sync.
+ */
+export class ConflictRecord {
+    "time": string;
+    "entity_type": string;
+    "entity_id": string;
+
+    /**
+     * "lww", "manual" (future)
+     */
+    "resolution": string;
+
+    /** Creates a new ConflictRecord instance. */
+    constructor($$source: Partial<ConflictRecord> = {}) {
+        if (!("time" in $$source)) {
+            this["time"] = "";
+        }
+        if (!("entity_type" in $$source)) {
+            this["entity_type"] = "";
+        }
+        if (!("entity_id" in $$source)) {
+            this["entity_id"] = "";
+        }
+        if (!("resolution" in $$source)) {
+            this["resolution"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ConflictRecord instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ConflictRecord {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ConflictRecord($$parsedSource as Partial<ConflictRecord>);
+    }
+}
+
+/**
+ * FailedOrderInfo holds details about a dead-lettered order for the dashboard.
+ */
+export class FailedOrderInfo {
+    "id": string;
+    "order_number": string;
+    "total": number;
+    "retry_count": number;
+    "sync_error": string;
+    "created_at": string;
+    "last_retry_at": string;
+
+    /** Creates a new FailedOrderInfo instance. */
+    constructor($$source: Partial<FailedOrderInfo> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("order_number" in $$source)) {
+            this["order_number"] = "";
+        }
+        if (!("total" in $$source)) {
+            this["total"] = 0;
+        }
+        if (!("retry_count" in $$source)) {
+            this["retry_count"] = 0;
+        }
+        if (!("sync_error" in $$source)) {
+            this["sync_error"] = "";
+        }
+        if (!("created_at" in $$source)) {
+            this["created_at"] = "";
+        }
+        if (!("last_retry_at" in $$source)) {
+            this["last_retry_at"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new FailedOrderInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): FailedOrderInfo {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new FailedOrderInfo($$parsedSource as Partial<FailedOrderInfo>);
+    }
+}
+
+/**
  * SSEEvent represents a parsed server-sent event.
  */
 export class SSEEvent {
@@ -36,3 +180,173 @@ export class SSEEvent {
         return new SSEEvent($$parsedSource as Partial<SSEEvent>);
     }
 }
+
+/**
+ * SyncLogEntry represents a single sync operation log entry.
+ */
+export class SyncLogEntry {
+    "time": string;
+
+    /**
+     * "pull", "push", "health", "retry"
+     */
+    "operation": string;
+
+    /**
+     * "categories", "orders", etc.
+     */
+    "entity": string;
+
+    /**
+     * "ok", "error", "skipped"
+     */
+    "status": string;
+    "message": string;
+
+    /**
+     * items synced/pushed
+     */
+    "count": number;
+
+    /** Creates a new SyncLogEntry instance. */
+    constructor($$source: Partial<SyncLogEntry> = {}) {
+        if (!("time" in $$source)) {
+            this["time"] = "";
+        }
+        if (!("operation" in $$source)) {
+            this["operation"] = "";
+        }
+        if (!("entity" in $$source)) {
+            this["entity"] = "";
+        }
+        if (!("status" in $$source)) {
+            this["status"] = "";
+        }
+        if (!("message" in $$source)) {
+            this["message"] = "";
+        }
+        if (!("count" in $$source)) {
+            this["count"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SyncLogEntry instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SyncLogEntry {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new SyncLogEntry($$parsedSource as Partial<SyncLogEntry>);
+    }
+}
+
+/**
+ * SyncStatusSnapshot is the JSON-serializable snapshot returned to the frontend.
+ */
+export class SyncStatusSnapshot {
+    /**
+     * Per-table timestamps
+     */
+    "table_sync_times": { [_ in string]?: string };
+
+    /**
+     * Connection state
+     */
+    "is_connected": boolean;
+    "last_health_check_at": string;
+    "last_connect_error": string;
+
+    /**
+     * Order push state
+     */
+    "pending_orders": number;
+    "failed_orders": number;
+
+    /**
+     * Sync cycle tracking
+     */
+    "last_pull_at": string;
+    "last_push_at": string;
+    "consecutive_errors": number;
+    "is_syncing": boolean;
+
+    /**
+     * Recent log entries
+     */
+    "recent_logs": SyncLogEntry[];
+
+    /**
+     * Conflict history
+     */
+    "conflicts": ConflictRecord[];
+
+    /** Creates a new SyncStatusSnapshot instance. */
+    constructor($$source: Partial<SyncStatusSnapshot> = {}) {
+        if (!("table_sync_times" in $$source)) {
+            this["table_sync_times"] = {};
+        }
+        if (!("is_connected" in $$source)) {
+            this["is_connected"] = false;
+        }
+        if (!("last_health_check_at" in $$source)) {
+            this["last_health_check_at"] = "";
+        }
+        if (!("last_connect_error" in $$source)) {
+            this["last_connect_error"] = "";
+        }
+        if (!("pending_orders" in $$source)) {
+            this["pending_orders"] = 0;
+        }
+        if (!("failed_orders" in $$source)) {
+            this["failed_orders"] = 0;
+        }
+        if (!("last_pull_at" in $$source)) {
+            this["last_pull_at"] = "";
+        }
+        if (!("last_push_at" in $$source)) {
+            this["last_push_at"] = "";
+        }
+        if (!("consecutive_errors" in $$source)) {
+            this["consecutive_errors"] = 0;
+        }
+        if (!("is_syncing" in $$source)) {
+            this["is_syncing"] = false;
+        }
+        if (!("recent_logs" in $$source)) {
+            this["recent_logs"] = [];
+        }
+        if (!("conflicts" in $$source)) {
+            this["conflicts"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SyncStatusSnapshot instance from a string or object.
+     */
+    static createFrom($$source: any = {}): SyncStatusSnapshot {
+        const $$createField0_0 = $$createType0;
+        const $$createField10_0 = $$createType2;
+        const $$createField11_0 = $$createType4;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("table_sync_times" in $$parsedSource) {
+            $$parsedSource["table_sync_times"] = $$createField0_0($$parsedSource["table_sync_times"]);
+        }
+        if ("recent_logs" in $$parsedSource) {
+            $$parsedSource["recent_logs"] = $$createField10_0($$parsedSource["recent_logs"]);
+        }
+        if ("conflicts" in $$parsedSource) {
+            $$parsedSource["conflicts"] = $$createField11_0($$parsedSource["conflicts"]);
+        }
+        return new SyncStatusSnapshot($$parsedSource as Partial<SyncStatusSnapshot>);
+    }
+}
+
+// Private type creation functions
+const $$createType0 = $Create.Map($Create.Any, $Create.Any);
+const $$createType1 = SyncLogEntry.createFrom;
+const $$createType2 = $Create.Array($$createType1);
+const $$createType3 = ConflictRecord.createFrom;
+const $$createType4 = $Create.Array($$createType3);

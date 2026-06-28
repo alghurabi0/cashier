@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 
 interface Table {
@@ -13,14 +13,17 @@ const tables = ref<Table[]>([])
 const newNumber = ref('')
 const isLoading = ref(false)
 const formError = ref('')
+const tableError = ref('')
 const copiedId = ref<string | null>(null)
 const qrData = ref<string | null>(null)
 const qrTableNumber = ref('')
+const settingsLoaded = ref(false)
 
-const menuBaseURL = ref('http://localhost:5173')
+const menuBaseURL = ref('')
 
 let ManagementService: any = null
 let ConfigStoreService: any = null
+let pollInterval: ReturnType<typeof setInterval> | null = null
 
 async function initBindings() {
   try {
@@ -35,6 +38,7 @@ async function initBindings() {
   } catch {
     console.warn('ConfigStoreService bindings not available')
   }
+  settingsLoaded.value = true
 }
 
 async function loadTables() {
@@ -47,6 +51,10 @@ async function loadTables() {
   } finally {
     isLoading.value = false
   }
+}
+
+function hasPendingTables(): boolean {
+  return tables.value.some(t => !t.token)
 }
 
 async function createTable() {
@@ -72,11 +80,13 @@ async function deleteTable(id: string) {
 }
 
 function getMenuLink(token: string): string {
+  if (!menuBaseURL.value || !token) return ''
   return `${menuBaseURL.value}?token=${token}`
 }
 
 function copyLink(table: Table) {
   const link = getMenuLink(table.token)
+  if (!link) return
   navigator.clipboard.writeText(link)
   copiedId.value = table.id
   setTimeout(() => { copiedId.value = null }, 2000)
@@ -84,11 +94,13 @@ function copyLink(table: Table) {
 
 async function showQR(table: Table) {
   if (!ManagementService) return
+  tableError.value = ''
   try {
     qrTableNumber.value = table.number
     qrData.value = await ManagementService.GetTableQRCode(table.token, menuBaseURL.value)
-  } catch (err) {
-    console.error('Failed to generate QR code:', err)
+  } catch (err: any) {
+    tableError.value = err?.message || 'فشل إنشاء رمز QR'
+    setTimeout(() => { tableError.value = '' }, 4000)
   }
 }
 
@@ -103,6 +115,19 @@ function downloadQR() {
 onMounted(async () => {
   await initBindings()
   await loadTables()
+
+  pollInterval = setInterval(async () => {
+    if (hasPendingTables()) {
+      await loadTables()
+    }
+  }, 5000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+    pollInterval = null
+  }
 })
 </script>
 
@@ -129,6 +154,14 @@ onMounted(async () => {
       <div v-if="formError" class="form-error">{{ formError }}</div>
     </div>
 
+    <!-- Error toast -->
+    <div v-if="tableError" class="table-error">{{ tableError }}</div>
+
+    <!-- Missing menu URL warning -->
+    <div v-if="settingsLoaded && !menuBaseURL" class="missing-url-warning">
+      ⚠️ لم يتم تعيين رابط القائمة. اذهب إلى حقل "رابط القائمة" أعلاه وأدخل الرابط أولاً.
+    </div>
+
     <!-- Tables list -->
     <div v-if="isLoading" class="loading">جاري التحميل...</div>
     <div v-else-if="tables.length === 0" class="empty">لا توجد طاولات — أضف أول طاولة</div>
@@ -137,12 +170,14 @@ onMounted(async () => {
         <span class="table-number">🪑 {{ table.number }}</span>
 
         <div class="table-link">
-          <code class="token-display">{{ getMenuLink(table.token) }}</code>
+          <span v-if="!table.token" class="sync-badge">⏳ بانتظار المزامنة</span>
+          <code v-else-if="menuBaseURL" class="token-display">{{ getMenuLink(table.token) }}</code>
+          <span v-else class="token-display text-muted">—</span>
         </div>
 
         <div class="table-actions">
-          <button class="btn-icon" title="رمز QR" @click="showQR(table)">📱</button>
-          <button class="btn-icon" :title="copiedId === table.id ? 'تم النسخ!' : 'نسخ رابط القائمة'" @click="copyLink(table)">
+          <button class="btn-icon" title="رمز QR" @click="showQR(table)" :disabled="!table.token">📱</button>
+          <button class="btn-icon" :title="copiedId === table.id ? 'تم النسخ!' : 'نسخ رابط القائمة'" @click="copyLink(table)" :disabled="!table.token || !menuBaseURL">
             {{ copiedId === table.id ? '✅' : '📋' }}
           </button>
           <button class="btn-icon btn-danger" title="حذف" @click="deleteTable(table.id)">🗑️</button>
@@ -249,12 +284,46 @@ onMounted(async () => {
   transition: background var(--transition-fast);
 }
 
-.btn-icon:hover {
+.btn-icon:hover:not(:disabled) {
   background: var(--color-surface-2);
+}
+
+.btn-icon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .btn-danger:hover {
   background: rgba(231, 76, 60, 0.12);
+}
+
+.table-error {
+  background: rgba(231, 76, 60, 0.12);
+  color: var(--color-danger);
+  padding: var(--gap-sm) var(--gap-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.missing-url-warning {
+  background: rgba(241, 196, 15, 0.12);
+  color: #b7950b;
+  padding: var(--gap-sm) var(--gap-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.sync-badge {
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  color: #b7950b;
+  background: rgba(241, 196, 15, 0.15);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
 }
 
 .hint {

@@ -3,6 +3,7 @@ package repository
 import (
 	"coffeeshop-api/internal/model"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -18,18 +19,19 @@ func NewRecipeRepository(db *sqlx.DB) *RecipeRepository {
 	return &RecipeRepository{db: db}
 }
 
-// FindByMenuItemID returns all recipe ingredients for a menu item,
-// joined with inventory item details.
-func (r *RecipeRepository) FindByMenuItemID(menuItemID uuid.UUID) ([]model.RecipeIngredientWithDetails, error) {
+const recipeDetailCols = `ri.id, ri.tenant_id, ri.menu_item_id, ri.inventory_item_id, ri.quantity, ri.updated_at,
+		        ii.name_ar AS inventory_name_ar, ii.base_unit_ar, ii.unit_cost`
+
+// FindByMenuItemID returns all recipe ingredients for a menu item (tenant-scoped).
+func (r *RecipeRepository) FindByMenuItemID(tenantID uuid.UUID, menuItemID uuid.UUID) ([]model.RecipeIngredientWithDetails, error) {
 	var ingredients []model.RecipeIngredientWithDetails
 	err := r.db.Select(&ingredients,
-		`SELECT ri.id, ri.menu_item_id, ri.inventory_item_id, ri.quantity,
-		        ii.name_ar AS inventory_name_ar, ii.base_unit_ar, ii.unit_cost
+		`SELECT `+recipeDetailCols+`
 		 FROM recipe_ingredients ri
 		 JOIN inventory_items ii ON ii.id = ri.inventory_item_id
-		 WHERE ri.menu_item_id = $1
+		 WHERE ri.tenant_id = $1 AND ri.menu_item_id = $2
 		 ORDER BY ii.name_ar ASC`,
-		menuItemID,
+		tenantID, menuItemID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch recipe: %w", err)
@@ -37,9 +39,44 @@ func (r *RecipeRepository) FindByMenuItemID(menuItemID uuid.UUID) ([]model.Recip
 	return ingredients, nil
 }
 
-// SetRecipe replaces all recipe ingredients for a menu item in a transaction.
-// Deletes existing ingredients, then inserts the new list.
-func (r *RecipeRepository) SetRecipe(menuItemID uuid.UUID, ingredients []model.RecipeIngredientInput) error {
+// FindAllBulk returns all recipe ingredients for all active menu items (tenant-scoped).
+func (r *RecipeRepository) FindAllBulk(tenantID uuid.UUID) ([]model.RecipeIngredientWithDetails, error) {
+	var ingredients []model.RecipeIngredientWithDetails
+	err := r.db.Select(&ingredients,
+		`SELECT `+recipeDetailCols+`
+		 FROM recipe_ingredients ri
+		 JOIN inventory_items ii ON ii.id = ri.inventory_item_id
+		 JOIN menu_items mi ON mi.id = ri.menu_item_id
+		 WHERE ri.tenant_id = $1 AND mi.is_active = true
+		 ORDER BY ri.menu_item_id, ii.name_ar ASC`,
+		tenantID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch all recipes: %w", err)
+	}
+	return ingredients, nil
+}
+
+// FindAllBulkSince returns recipe ingredients for menu items updated since the given time (tenant-scoped).
+func (r *RecipeRepository) FindAllBulkSince(tenantID uuid.UUID, since time.Time) ([]model.RecipeIngredientWithDetails, error) {
+	var ingredients []model.RecipeIngredientWithDetails
+	err := r.db.Select(&ingredients,
+		`SELECT `+recipeDetailCols+`
+		 FROM recipe_ingredients ri
+		 JOIN inventory_items ii ON ii.id = ri.inventory_item_id
+		 JOIN menu_items mi ON mi.id = ri.menu_item_id
+		 WHERE ri.tenant_id = $1 AND mi.updated_at > $2
+		 ORDER BY ri.menu_item_id, ii.name_ar ASC`,
+		tenantID, since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch recipes since %v: %w", since, err)
+	}
+	return ingredients, nil
+}
+
+// SetRecipe replaces all recipe ingredients for a menu item (tenant-scoped).
+func (r *RecipeRepository) SetRecipe(tenantID uuid.UUID, menuItemID uuid.UUID, ingredients []model.RecipeIngredientInput) error {
 	tx, err := r.db.Beginx()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -48,8 +85,8 @@ func (r *RecipeRepository) SetRecipe(menuItemID uuid.UUID, ingredients []model.R
 
 	// Delete existing recipe
 	_, err = tx.Exec(
-		`DELETE FROM recipe_ingredients WHERE menu_item_id = $1`,
-		menuItemID,
+		`DELETE FROM recipe_ingredients WHERE tenant_id = $1 AND menu_item_id = $2`,
+		tenantID, menuItemID,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to clear existing recipe: %w", err)
@@ -58,9 +95,9 @@ func (r *RecipeRepository) SetRecipe(menuItemID uuid.UUID, ingredients []model.R
 	// Insert new ingredients
 	for _, ing := range ingredients {
 		_, err = tx.Exec(
-			`INSERT INTO recipe_ingredients (menu_item_id, inventory_item_id, quantity)
-			 VALUES ($1, $2, $3)`,
-			menuItemID, ing.InventoryItemID, ing.Quantity,
+			`INSERT INTO recipe_ingredients (tenant_id, menu_item_id, inventory_item_id, quantity)
+			 VALUES ($1, $2, $3, $4)`,
+			tenantID, menuItemID, ing.InventoryItemID, ing.Quantity,
 		)
 		if err != nil {
 			return fmt.Errorf("failed to insert recipe ingredient: %w", err)
@@ -75,7 +112,6 @@ func (r *RecipeRepository) SetRecipe(menuItemID uuid.UUID, ingredients []model.R
 }
 
 // CalculateAutoCost computes the total auto-cost for a menu item's recipe.
-// Formula: SUM(recipe_ingredient.quantity × inventory_item.unit_cost)
 func (r *RecipeRepository) CalculateAutoCost(menuItemID uuid.UUID) (int64, error) {
 	var cost *int64
 	err := r.db.Get(&cost,
@@ -88,15 +124,13 @@ func (r *RecipeRepository) CalculateAutoCost(menuItemID uuid.UUID) (int64, error
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate auto cost: %w", err)
 	}
-	// If no recipe ingredients, cost is NULL → return 0
 	if cost == nil {
 		return 0, nil
 	}
 	return *cost, nil
 }
 
-// FindMenuItemIDsByInventoryItem returns all menu item IDs that have a recipe
-// containing the given inventory item. Used for cascading auto-cost recalculation.
+// FindMenuItemIDsByInventoryItem returns all menu item IDs that use the given inventory item.
 func (r *RecipeRepository) FindMenuItemIDsByInventoryItem(inventoryItemID uuid.UUID) ([]uuid.UUID, error) {
 	var ids []uuid.UUID
 	err := r.db.Select(&ids,

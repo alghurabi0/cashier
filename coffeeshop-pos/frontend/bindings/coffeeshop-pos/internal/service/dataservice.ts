@@ -25,6 +25,14 @@ export function GetCategories(): $CancellablePromise<model$0.Category[]> {
 }
 
 /**
+ * GetImageDataURI fetches an image URL and returns it as a base64 data URI.
+ * Results are cached in memory so each URL is fetched only once.
+ */
+export function GetImageDataURI(imageURL: string): $CancellablePromise<string> {
+    return $Call.ByID(1776182208, imageURL);
+}
+
+/**
  * GetInventoryItems returns all active inventory items from local SQLite.
  */
 export function GetInventoryItems(): $CancellablePromise<model$0.InventoryItem[]> {

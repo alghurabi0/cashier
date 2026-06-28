@@ -4,14 +4,15 @@ import (
 	"coffeeshop-api/internal/model"
 	"coffeeshop-api/internal/repository"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
 
 // RecipeService handles business logic for recipes.
 type RecipeService struct {
-	recipeRepo   *repository.RecipeRepository
-	menuItemRepo *repository.MenuItemRepository
+	recipeRepo    *repository.RecipeRepository
+	menuItemRepo  *repository.MenuItemRepository
 	inventoryRepo *repository.InventoryRepository
 }
 
@@ -28,27 +29,33 @@ func NewRecipeService(
 	}
 }
 
-// GetRecipe returns the recipe for a menu item with ingredient details.
-func (s *RecipeService) GetRecipe(menuItemID uuid.UUID) ([]model.RecipeIngredientWithDetails, error) {
-	// Verify menu item exists
-	_, err := s.menuItemRepo.FindByID(menuItemID)
+// GetRecipe returns the recipe for a menu item (tenant-scoped).
+func (s *RecipeService) GetRecipe(tenantID uuid.UUID, menuItemID uuid.UUID) ([]model.RecipeIngredientWithDetails, error) {
+	_, err := s.menuItemRepo.FindByID(tenantID, menuItemID)
 	if err != nil {
 		return nil, fmt.Errorf("menu item not found")
 	}
 
-	return s.recipeRepo.FindByMenuItemID(menuItemID)
+	return s.recipeRepo.FindByMenuItemID(tenantID, menuItemID)
 }
 
-// SetRecipe validates and replaces the recipe for a menu item.
-// After saving, recalculates and updates cached_auto_cost.
-func (s *RecipeService) SetRecipe(menuItemID uuid.UUID, req model.SetRecipeRequest) ([]model.RecipeIngredientWithDetails, error) {
-	// Verify menu item exists
-	_, err := s.menuItemRepo.FindByID(menuItemID)
+// GetAllRecipes returns all recipe ingredients for all active menu items (tenant-scoped).
+func (s *RecipeService) GetAllRecipes(tenantID uuid.UUID) ([]model.RecipeIngredientWithDetails, error) {
+	return s.recipeRepo.FindAllBulk(tenantID)
+}
+
+// GetAllRecipesSince returns recipe ingredients for menu items updated since the given time.
+func (s *RecipeService) GetAllRecipesSince(tenantID uuid.UUID, since time.Time) ([]model.RecipeIngredientWithDetails, error) {
+	return s.recipeRepo.FindAllBulkSince(tenantID, since)
+}
+
+// SetRecipe validates and replaces the recipe for a menu item (tenant-scoped).
+func (s *RecipeService) SetRecipe(tenantID uuid.UUID, menuItemID uuid.UUID, req model.SetRecipeRequest) ([]model.RecipeIngredientWithDetails, error) {
+	_, err := s.menuItemRepo.FindByID(tenantID, menuItemID)
 	if err != nil {
 		return nil, fmt.Errorf("menu item not found")
 	}
 
-	// Validate ingredients
 	errors := make(map[string]string)
 	for i, ing := range req.Ingredients {
 		if ing.InventoryItemID == uuid.Nil {
@@ -62,9 +69,8 @@ func (s *RecipeService) SetRecipe(menuItemID uuid.UUID, req model.SetRecipeReque
 		return nil, &ValidationError{Errors: errors}
 	}
 
-	// Verify all inventory items exist
 	for i, ing := range req.Ingredients {
-		_, err := s.inventoryRepo.FindByID(ing.InventoryItemID)
+		_, err := s.inventoryRepo.FindByID(tenantID, ing.InventoryItemID)
 		if err != nil {
 			errors[fmt.Sprintf("ingredients[%d].inventory_item_id", i)] = "inventory item not found"
 		}
@@ -73,12 +79,10 @@ func (s *RecipeService) SetRecipe(menuItemID uuid.UUID, req model.SetRecipeReque
 		return nil, &ValidationError{Errors: errors}
 	}
 
-	// Save the recipe (delete-and-replace)
-	if err := s.recipeRepo.SetRecipe(menuItemID, req.Ingredients); err != nil {
+	if err := s.recipeRepo.SetRecipe(tenantID, menuItemID, req.Ingredients); err != nil {
 		return nil, fmt.Errorf("failed to save recipe: %w", err)
 	}
 
-	// Recalculate and update cached_auto_cost
 	cost, err := s.recipeRepo.CalculateAutoCost(menuItemID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to calculate auto cost: %w", err)
@@ -87,6 +91,5 @@ func (s *RecipeService) SetRecipe(menuItemID uuid.UUID, req model.SetRecipeReque
 		return nil, fmt.Errorf("failed to update cached auto cost: %w", err)
 	}
 
-	// Return the saved recipe with details
-	return s.recipeRepo.FindByMenuItemID(menuItemID)
+	return s.recipeRepo.FindByMenuItemID(tenantID, menuItemID)
 }

@@ -8,19 +8,23 @@ import (
 
 // Order represents a sales transaction.
 type Order struct {
-	ID            uuid.UUID `db:"id"             json:"id"`
-	OrderNumber   string    `db:"order_number"   json:"order_number"`
-	Source        string    `db:"source"         json:"source"`
-	TableNumber   string    `db:"table_number"   json:"table_number"`
-	Status        string    `db:"status"         json:"status"`
-	Total         int64     `db:"total"          json:"total"`
-	PaymentMethod string    `db:"payment_method" json:"payment_method"`
-	CreatedAt     time.Time `db:"created_at"     json:"created_at"`
+	ID            uuid.UUID  `db:"id"             json:"id"`
+	TenantID      uuid.UUID  `db:"tenant_id"      json:"tenant_id"`
+	DeviceID      *uuid.UUID `db:"device_id"      json:"device_id"`
+	OrderNumber   string     `db:"order_number"    json:"order_number"`
+	Source        string     `db:"source"          json:"source"`
+	TableNumber   string     `db:"table_number"    json:"table_number"`
+	Status        string     `db:"status"          json:"status"`
+	Total         int64      `db:"total"           json:"total"`
+	PaymentMethod string     `db:"payment_method"  json:"payment_method"`
+	CreatedAt     time.Time  `db:"created_at"      json:"created_at"`
+	UpdatedAt     time.Time  `db:"updated_at"      json:"updated_at"`
 }
 
 // OrderItem represents a single line in an order.
 type OrderItem struct {
 	ID             uuid.UUID  `db:"id"               json:"id"`
+	TenantID       uuid.UUID  `db:"tenant_id"        json:"tenant_id"`
 	OrderID        uuid.UUID  `db:"order_id"         json:"order_id"`
 	MenuItemID     *uuid.UUID `db:"menu_item_id"     json:"menu_item_id"`
 	Quantity       int        `db:"quantity"          json:"quantity"`

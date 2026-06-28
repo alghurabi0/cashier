@@ -17,6 +17,8 @@ type OrderService struct {
 	configStore *ConfigStoreService
 }
 
+const orderSelectCols = `id, order_number, source, table_number, status, total, payment_method, device_id, created_at, updated_at, synced`
+
 // NewOrderService creates a new OrderService.
 func NewOrderService(db *sqlx.DB, configStore *ConfigStoreService) *OrderService {
 	return &OrderService{db: db, configStore: configStore}
@@ -78,9 +80,9 @@ func (s *OrderService) CreateOrder(items []model.CartItem, paymentMethod string,
 	}
 
 	_, err = tx.Exec(
-		`INSERT INTO orders (id, order_number, source, table_number, status, total, payment_method, created_at, synced)
-		 VALUES (?, ?, 'cashier', ?, ?, ?, ?, ?, 0)`,
-		orderID, orderNumber, tableNumber, initialStatus, total, paymentMethod, createdAt,
+		`INSERT INTO orders (id, order_number, source, table_number, status, total, payment_method, created_at, updated_at, synced)
+		 VALUES (?, ?, 'cashier', ?, ?, ?, ?, ?, ?, 0)`,
+		orderID, orderNumber, tableNumber, initialStatus, total, paymentMethod, createdAt, createdAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert order: %w", err)
@@ -119,7 +121,7 @@ func (s *OrderService) CreateOrder(items []model.CartItem, paymentMethod string,
 		Total:         total,
 		PaymentMethod: paymentMethod,
 		CreatedAt:     createdAt,
-		Synced:        false,
+		Synced:        0,
 	}
 
 	return &model.OrderWithItems{Order: order, Items: orderItems}, nil
@@ -153,7 +155,7 @@ func (s *OrderService) CompleteCashierOrder(orderID string) (*model.OrderWithIte
 	// Fetch the updated order with items
 	var order model.Order
 	err = s.db.Get(&order,
-		`SELECT id, order_number, source, table_number, status, total, payment_method, created_at, synced
+		`SELECT ` + orderSelectCols + `
 		 FROM orders WHERE id = ?`, orderID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch completed order: %w", err)
@@ -179,7 +181,7 @@ func (s *OrderService) GetAcceptedOrders() ([]model.OrderWithItems, error) {
 
 	var orders []model.Order
 	err := s.db.Select(&orders,
-		`SELECT id, order_number, source, table_number, status, total, payment_method, created_at, synced
+		`SELECT ` + orderSelectCols + `
 		 FROM orders
 		 WHERE status = 'accepted' AND created_at LIKE ?
 		 ORDER BY created_at ASC`,
@@ -213,7 +215,7 @@ func (s *OrderService) GetTodayOrders() ([]model.OrderWithItems, error) {
 
 	var orders []model.Order
 	err := s.db.Select(&orders,
-		`SELECT id, order_number, source, table_number, status, total, payment_method, created_at, synced
+		`SELECT ` + orderSelectCols + `
 		 FROM orders
 		 WHERE created_at LIKE ?
 		 ORDER BY created_at DESC`,
@@ -301,7 +303,7 @@ func (s *OrderService) GetOrdersByDateRange(from, to string) ([]model.OrderWithI
 
 	var orders []model.Order
 	err := s.db.Select(&orders,
-		`SELECT id, order_number, source, table_number, status, total, payment_method, created_at, synced
+		`SELECT ` + orderSelectCols + `
 		 FROM orders
 		 WHERE created_at >= ? AND created_at < date(?, '+1 day')
 		 ORDER BY created_at DESC`,
@@ -359,7 +361,7 @@ func (s *OrderService) VoidOrder(orderID string) (*model.Order, error) {
 
 	var order model.Order
 	err = s.db.Get(&order,
-		`SELECT id, order_number, source, table_number, status, total, payment_method, created_at, synced
+		`SELECT ` + orderSelectCols + `
 		 FROM orders WHERE id = ?`, orderID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch voided order: %w", err)

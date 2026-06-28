@@ -1,18 +1,4 @@
-export interface Category {
-  id: string
-  name_ar: string
-  sort_order: number
-  is_active: boolean
-}
-
-export interface MenuItem {
-  id: string
-  category_id: string
-  name_ar: string
-  price: number
-  image_path: string
-  is_active: boolean
-}
+export type { Category, MenuItem } from '@cashier/menu-sdk'
 
 export interface CartItem {
   menu_item_id: string

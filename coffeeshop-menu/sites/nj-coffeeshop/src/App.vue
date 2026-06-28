@@ -76,7 +76,7 @@ function onVideoEnd() {
       </div>
     </div>
 
-    <MenuView v-else-if="currentView === 'menu'" :table-number="tableNumber" @open-cart="currentView = 'cart'" />
+    <MenuView v-else-if="currentView === 'menu'" :table-token="tableToken" :table-number="tableNumber" @open-cart="currentView = 'cart'" />
     <CartView v-else-if="currentView === 'cart'" :token="tableToken" @back="currentView = 'menu'" @submitted="currentView = 'confirmation'" />
     <ConfirmationView v-else-if="currentView === 'confirmation'" />
   </div>

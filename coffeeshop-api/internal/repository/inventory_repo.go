@@ -3,6 +3,7 @@ package repository
 import (
 	"coffeeshop-api/internal/model"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -18,14 +19,17 @@ func NewInventoryRepository(db *sqlx.DB) *InventoryRepository {
 	return &InventoryRepository{db: db}
 }
 
-// FindAll returns all active inventory items sorted by name.
-func (r *InventoryRepository) FindAll() ([]model.InventoryItem, error) {
+const invSelectCols = `id, tenant_id, name_ar, base_unit_ar, stock_qty, low_stock_threshold, unit_cost, is_active, updated_at`
+
+// FindAll returns all active inventory items for a tenant sorted by name.
+func (r *InventoryRepository) FindAll(tenantID uuid.UUID) ([]model.InventoryItem, error) {
 	var items []model.InventoryItem
 	err := r.db.Select(&items,
-		`SELECT id, name_ar, base_unit_ar, stock_qty, low_stock_threshold, unit_cost, is_active
+		`SELECT `+invSelectCols+`
 		 FROM inventory_items
-		 WHERE is_active = true
+		 WHERE tenant_id = $1 AND is_active = true
 		 ORDER BY name_ar ASC`,
+		tenantID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch inventory items: %w", err)
@@ -33,14 +37,30 @@ func (r *InventoryRepository) FindAll() ([]model.InventoryItem, error) {
 	return items, nil
 }
 
-// FindByID returns a single inventory item by ID.
-func (r *InventoryRepository) FindByID(id uuid.UUID) (*model.InventoryItem, error) {
+// FindAllSince returns all inventory items (including inactive) modified since the given time.
+func (r *InventoryRepository) FindAllSince(tenantID uuid.UUID, since time.Time) ([]model.InventoryItem, error) {
+	var items []model.InventoryItem
+	err := r.db.Select(&items,
+		`SELECT `+invSelectCols+`
+		 FROM inventory_items
+		 WHERE tenant_id = $1 AND updated_at > $2
+		 ORDER BY name_ar ASC`,
+		tenantID, since,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch inventory items since %v: %w", since, err)
+	}
+	return items, nil
+}
+
+// FindByID returns a single inventory item by ID (tenant-scoped).
+func (r *InventoryRepository) FindByID(tenantID uuid.UUID, id uuid.UUID) (*model.InventoryItem, error) {
 	var item model.InventoryItem
 	err := r.db.Get(&item,
-		`SELECT id, name_ar, base_unit_ar, stock_qty, low_stock_threshold, unit_cost, is_active
+		`SELECT `+invSelectCols+`
 		 FROM inventory_items
-		 WHERE id = $1`,
-		id,
+		 WHERE tenant_id = $1 AND id = $2`,
+		tenantID, id,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("inventory item not found: %w", err)
@@ -48,30 +68,42 @@ func (r *InventoryRepository) FindByID(id uuid.UUID) (*model.InventoryItem, erro
 	return &item, nil
 }
 
-// Create inserts a new inventory item and returns it.
-func (r *InventoryRepository) Create(nameAr, baseUnitAr string, stockQty, lowStockThreshold int, unitCost int64) (*model.InventoryItem, error) {
+// Create inserts a new inventory item under a tenant.
+func (r *InventoryRepository) Create(tenantID uuid.UUID, nameAr, baseUnitAr string, stockQty, lowStockThreshold int, unitCost int64, clientID *uuid.UUID) (*model.InventoryItem, error) {
 	var item model.InventoryItem
-	err := r.db.Get(&item,
-		`INSERT INTO inventory_items (name_ar, base_unit_ar, stock_qty, low_stock_threshold, unit_cost)
-		 VALUES ($1, $2, $3, $4, $5)
-		 RETURNING id, name_ar, base_unit_ar, stock_qty, low_stock_threshold, unit_cost, is_active`,
-		nameAr, baseUnitAr, stockQty, lowStockThreshold, unitCost,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create inventory item: %w", err)
+	if clientID != nil {
+		err := r.db.Get(&item,
+			`INSERT INTO inventory_items (id, tenant_id, name_ar, base_unit_ar, stock_qty, low_stock_threshold, unit_cost)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7)
+			 RETURNING `+invSelectCols,
+			*clientID, tenantID, nameAr, baseUnitAr, stockQty, lowStockThreshold, unitCost,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create inventory item: %w", err)
+		}
+	} else {
+		err := r.db.Get(&item,
+			`INSERT INTO inventory_items (tenant_id, name_ar, base_unit_ar, stock_qty, low_stock_threshold, unit_cost)
+			 VALUES ($1, $2, $3, $4, $5, $6)
+			 RETURNING `+invSelectCols,
+			tenantID, nameAr, baseUnitAr, stockQty, lowStockThreshold, unitCost,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create inventory item: %w", err)
+		}
 	}
 	return &item, nil
 }
 
-// Update modifies an existing inventory item (excluding stock_qty).
-func (r *InventoryRepository) Update(id uuid.UUID, nameAr, baseUnitAr string, lowStockThreshold int, unitCost int64, isActive bool) (*model.InventoryItem, error) {
+// Update modifies an existing inventory item (excluding stock_qty, tenant-scoped).
+func (r *InventoryRepository) Update(tenantID uuid.UUID, id uuid.UUID, nameAr, baseUnitAr string, lowStockThreshold int, unitCost int64, isActive bool) (*model.InventoryItem, error) {
 	var item model.InventoryItem
 	err := r.db.Get(&item,
 		`UPDATE inventory_items
 		 SET name_ar = $1, base_unit_ar = $2, low_stock_threshold = $3, unit_cost = $4, is_active = $5
-		 WHERE id = $6
-		 RETURNING id, name_ar, base_unit_ar, stock_qty, low_stock_threshold, unit_cost, is_active`,
-		nameAr, baseUnitAr, lowStockThreshold, unitCost, isActive, id,
+		 WHERE tenant_id = $6 AND id = $7
+		 RETURNING `+invSelectCols,
+		nameAr, baseUnitAr, lowStockThreshold, unitCost, isActive, tenantID, id,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update inventory item: %w", err)
@@ -79,11 +111,27 @@ func (r *InventoryRepository) Update(id uuid.UUID, nameAr, baseUnitAr string, lo
 	return &item, nil
 }
 
-// SoftDelete sets is_active to false for the given inventory item.
-func (r *InventoryRepository) SoftDelete(id uuid.UUID) error {
+// UpdateWithVersion modifies an inventory item only if its updated_at matches expectedVersion.
+func (r *InventoryRepository) UpdateWithVersion(tenantID uuid.UUID, id uuid.UUID, nameAr, baseUnitAr string, lowStockThreshold int, unitCost int64, isActive bool, expectedVersion time.Time) (*model.InventoryItem, error) {
+	var item model.InventoryItem
+	err := r.db.Get(&item,
+		`UPDATE inventory_items
+		 SET name_ar = $1, base_unit_ar = $2, low_stock_threshold = $3, unit_cost = $4, is_active = $5
+		 WHERE tenant_id = $6 AND id = $7 AND updated_at = $8
+		 RETURNING `+invSelectCols,
+		nameAr, baseUnitAr, lowStockThreshold, unitCost, isActive, tenantID, id, expectedVersion,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+// SoftDelete sets is_active to false for the given inventory item (tenant-scoped).
+func (r *InventoryRepository) SoftDelete(tenantID uuid.UUID, id uuid.UUID) error {
 	result, err := r.db.Exec(
-		`UPDATE inventory_items SET is_active = false WHERE id = $1`,
-		id,
+		`UPDATE inventory_items SET is_active = false WHERE tenant_id = $1 AND id = $2`,
+		tenantID, id,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to delete inventory item: %w", err)
@@ -99,8 +147,8 @@ func (r *InventoryRepository) SoftDelete(id uuid.UUID) error {
 }
 
 // AdjustStock atomically inserts a stock adjustment record and updates the
-// inventory item's stock_qty in a single transaction.
-func (r *InventoryRepository) AdjustStock(inventoryItemID uuid.UUID, delta int, reasonAr string) (*model.StockAdjustment, error) {
+// inventory item's stock_qty in a single transaction (tenant-scoped).
+func (r *InventoryRepository) AdjustStock(tenantID uuid.UUID, inventoryItemID uuid.UUID, delta int, reasonAr string, clientID *uuid.UUID) (*model.StockAdjustment, error) {
 	tx, err := r.db.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
@@ -109,20 +157,29 @@ func (r *InventoryRepository) AdjustStock(inventoryItemID uuid.UUID, delta int, 
 
 	// Insert adjustment record
 	var adjustment model.StockAdjustment
-	err = tx.Get(&adjustment,
-		`INSERT INTO stock_adjustments (inventory_item_id, delta, reason_ar)
-		 VALUES ($1, $2, $3)
-		 RETURNING id, inventory_item_id, delta, reason_ar, created_at`,
-		inventoryItemID, delta, reasonAr,
-	)
+	if clientID != nil {
+		err = tx.Get(&adjustment,
+			`INSERT INTO stock_adjustments (id, tenant_id, inventory_item_id, delta, reason_ar)
+			 VALUES ($1, $2, $3, $4, $5)
+			 RETURNING id, tenant_id, inventory_item_id, delta, reason_ar, created_at`,
+			*clientID, tenantID, inventoryItemID, delta, reasonAr,
+		)
+	} else {
+		err = tx.Get(&adjustment,
+			`INSERT INTO stock_adjustments (tenant_id, inventory_item_id, delta, reason_ar)
+			 VALUES ($1, $2, $3, $4)
+			 RETURNING id, tenant_id, inventory_item_id, delta, reason_ar, created_at`,
+			tenantID, inventoryItemID, delta, reasonAr,
+		)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert stock adjustment: %w", err)
 	}
 
 	// Update stock_qty on the inventory item
 	result, err := tx.Exec(
-		`UPDATE inventory_items SET stock_qty = stock_qty + $1 WHERE id = $2`,
-		delta, inventoryItemID,
+		`UPDATE inventory_items SET stock_qty = stock_qty + $1 WHERE tenant_id = $2 AND id = $3`,
+		delta, tenantID, inventoryItemID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update stock qty: %w", err)
