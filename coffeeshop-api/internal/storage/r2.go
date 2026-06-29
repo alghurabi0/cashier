@@ -79,6 +79,37 @@ func (s *R2Storage) Upload(ctx context.Context, key string, body io.Reader, cont
 	return publicURL, nil
 }
 
+// Get retrieves a file from R2 by key. Returns the body, content type, and any error.
+// Caller must close the returned ReadCloser.
+func (s *R2Storage) Get(ctx context.Context, key string) (io.ReadCloser, string, error) {
+	if s == nil {
+		return nil, "", fmt.Errorf("R2 storage is not configured")
+	}
+
+	result, err := s.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get object from R2: %w", err)
+	}
+
+	contentType := ""
+	if result.ContentType != nil {
+		contentType = *result.ContentType
+	}
+
+	return result.Body, contentType, nil
+}
+
+// PublicURL returns the configured public URL prefix for R2 objects.
+func (s *R2Storage) PublicURL() string {
+	if s == nil {
+		return ""
+	}
+	return s.publicURL
+}
+
 // IsConfigured returns true if R2 storage is properly configured.
 func (s *R2Storage) IsConfigured() bool {
 	return s != nil && s.client != nil

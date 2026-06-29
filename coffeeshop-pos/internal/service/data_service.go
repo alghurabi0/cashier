@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/jmoiron/sqlx"
@@ -17,12 +18,13 @@ var imageCache sync.Map
 // DataService is a Wails-bound service that exposes local SQLite data
 // to the frontend. All methods are exported and callable from JavaScript.
 type DataService struct {
-	db *sqlx.DB
+	db          *sqlx.DB
+	configStore *ConfigStoreService
 }
 
 // NewDataService creates a new DataService.
-func NewDataService(db *sqlx.DB) *DataService {
-	return &DataService{db: db}
+func NewDataService(db *sqlx.DB, configStore *ConfigStoreService) *DataService {
+	return &DataService{db: db, configStore: configStore}
 }
 
 // GetCategories returns all active categories from local SQLite.
@@ -94,6 +96,7 @@ func (s *DataService) GetInventoryItems() ([]model.InventoryItem, error) {
 
 // GetImageDataURI fetches an image URL and returns it as a base64 data URI.
 // Results are cached in memory so each URL is fetched only once.
+// If an API URL is configured, routes through the API image proxy for network resilience.
 func (s *DataService) GetImageDataURI(imageURL string) (string, error) {
 	if imageURL == "" {
 		return "", nil
@@ -103,9 +106,11 @@ func (s *DataService) GetImageDataURI(imageURL string) (string, error) {
 		return cached.(string), nil
 	}
 
-	resp, err := http.Get(imageURL)
+	fetchURL := s.toProxyURL(imageURL)
+
+	resp, err := http.Get(fetchURL)
 	if err != nil {
-		slog.Warn("failed to fetch image", "url", imageURL, "error", err)
+		slog.Warn("failed to fetch image", "url", fetchURL, "error", err)
 		return "", fmt.Errorf("failed to fetch image: %w", err)
 	}
 	defer resp.Body.Close()
@@ -128,6 +133,23 @@ func (s *DataService) GetImageDataURI(imageURL string) (string, error) {
 	imageCache.Store(imageURL, dataURI)
 
 	return dataURI, nil
+}
+
+// toProxyURL converts an R2 public URL to an API proxy URL when possible.
+// e.g. "https://pub-xxx.r2.dev/menu-items/uuid.jpg" → "http://localhost:8080/api/v1/images/menu-items/uuid.jpg"
+func (s *DataService) toProxyURL(imageURL string) string {
+	apiURL := s.configStore.Get("api_url")
+	if apiURL == "" {
+		return imageURL
+	}
+
+	// Extract the R2 key from known public URL patterns
+	if idx := strings.Index(imageURL, ".r2.dev/"); idx != -1 {
+		key := imageURL[idx+len(".r2.dev/"):]
+		return strings.TrimRight(apiURL, "/") + "/api/v1/images/" + key
+	}
+
+	return imageURL
 }
 
 // GetLastSyncTime returns the last successful sync timestamp from sync_meta.

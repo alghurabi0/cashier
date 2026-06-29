@@ -27,6 +27,7 @@ export function GetCategories(): $CancellablePromise<model$0.Category[]> {
 /**
  * GetImageDataURI fetches an image URL and returns it as a base64 data URI.
  * Results are cached in memory so each URL is fetched only once.
+ * If an API URL is configured, routes through the API image proxy for network resilience.
  */
 export function GetImageDataURI(imageURL: string): $CancellablePromise<string> {
     return $Call.ByID(1776182208, imageURL);

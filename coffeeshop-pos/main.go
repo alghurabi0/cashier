@@ -54,7 +54,7 @@ func main() {
 	configStore.TryAutoLogin()
 
 	// Create services
-	dataService := service.NewDataService(db)
+	dataService := service.NewDataService(db, configStore)
 	orderService := service.NewOrderService(db, configStore)
 	receiptService := service.NewReceiptService("المقهى")
 	authService := service.NewAuthService(db)

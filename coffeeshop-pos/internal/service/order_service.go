@@ -17,7 +17,7 @@ type OrderService struct {
 	configStore *ConfigStoreService
 }
 
-const orderSelectCols = `id, order_number, source, table_number, status, total, payment_method, device_id, created_at, updated_at, synced`
+const orderSelectCols = `id, COALESCE(order_number,'') AS order_number, source, COALESCE(table_number,'') AS table_number, status, total, COALESCE(payment_method,'') AS payment_method, COALESCE(device_id,'') AS device_id, created_at, updated_at, synced`
 
 // NewOrderService creates a new OrderService.
 func NewOrderService(db *sqlx.DB, configStore *ConfigStoreService) *OrderService {

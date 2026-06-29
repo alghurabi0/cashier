@@ -181,6 +181,10 @@ func main() {
 	// File uploads
 	mux.HandleFunc("POST /api/v1/uploads", authMw(uploadHandler.Upload))
 
+	// Image proxy (public — keys are UUIDs, effectively unguessable)
+	imageHandler := handler.NewImageHandler(r2)
+	mux.HandleFunc("GET /api/v1/images/{path...}", imageHandler.Serve)
+
 	// ─── Admin routes (super_admin only) ───
 	adminMw := func(h http.HandlerFunc) http.HandlerFunc {
 		return authMw(middleware.AdminOnly(h))
