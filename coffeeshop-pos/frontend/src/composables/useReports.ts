@@ -26,10 +26,15 @@ export interface DailyEntry {
   total_sales: number
 }
 
+function localDateStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 const report = ref<ProfitReport | null>(null)
 const isLoading = ref(false)
-const dateFrom = ref(new Date().toISOString().split('T')[0])
-const dateTo = ref(new Date().toISOString().split('T')[0])
+const dateFrom = ref(localDateStr())
+const dateTo = ref(localDateStr())
 
 export function useReports() {
   async function initBindings() {

@@ -91,7 +91,8 @@ export class CashierMenu {
       const body = await res.json().catch(() => ({}))
       throw new Error(body.error || `Failed to load menu (${res.status})`)
     }
-    return res.json()
+    const json = await res.json()
+    return json.data ?? json
   }
 
   /**
