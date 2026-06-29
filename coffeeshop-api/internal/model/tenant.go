@@ -24,6 +24,7 @@ type TenantSettings struct {
 	KitchenModeEnabled     bool   `json:"kitchen_mode_enabled"`
 	ConflictResolutionMode string `json:"conflict_resolution_mode"` // "last-write-wins" | "manual"
 	MenuURL                string `json:"menu_url"`                 // where this tenant's web menu is hosted
+	IntroVideoURL          string `json:"intro_video_url"`          // R2 URL for the POS login background video
 }
 
 // Scan implements sql.Scanner for reading JSONB from the database.

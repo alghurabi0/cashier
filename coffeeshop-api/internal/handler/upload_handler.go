@@ -22,6 +22,7 @@ func NewUploadHandler(storage *storage.R2Storage) *UploadHandler {
 
 // Upload handles POST /api/v1/uploads
 // Accepts multipart/form-data with a single file field named "file".
+// Optional query param "folder" to set the R2 key prefix (default: "menu-items").
 // Returns the public URL of the uploaded file.
 func (h *UploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	if h.storage == nil || !h.storage.IsConfigured() {
@@ -29,8 +30,16 @@ func (h *UploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Limit upload size to 5MB
-	r.Body = http.MaxBytesReader(w, r.Body, 5<<20)
+	allowedExts := map[string]string{
+		".jpg":  "image/jpeg",
+		".jpeg": "image/jpeg",
+		".png":  "image/png",
+		".webp": "image/webp",
+		".mp4":  "video/mp4",
+	}
+
+	// 50MB limit for videos, 5MB for images
+	r.Body = http.MaxBytesReader(w, r.Body, 50<<20)
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -39,25 +48,20 @@ func (h *UploadHandler) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Validate file type
 	ext := strings.ToLower(filepath.Ext(header.Filename))
-	allowedExts := map[string]string{
-		".jpg":  "image/jpeg",
-		".jpeg": "image/jpeg",
-		".png":  "image/png",
-		".webp": "image/webp",
-	}
-
 	contentType, ok := allowedExts[ext]
 	if !ok {
-		Error(w, http.StatusBadRequest, "unsupported file type (allowed: jpg, png, webp)")
+		Error(w, http.StatusBadRequest, "unsupported file type (allowed: jpg, png, webp, mp4)")
 		return
 	}
 
-	// Generate unique key
-	key := fmt.Sprintf("menu-items/%s%s", uuid.New().String(), ext)
+	folder := r.URL.Query().Get("folder")
+	if folder == "" {
+		folder = "menu-items"
+	}
 
-	// Upload to R2
+	key := fmt.Sprintf("%s/%s%s", folder, uuid.New().String(), ext)
+
 	publicURL, err := h.storage.Upload(r.Context(), key, file, contentType)
 	if err != nil {
 		Error(w, http.StatusInternalServerError, fmt.Sprintf("upload failed: %v", err))

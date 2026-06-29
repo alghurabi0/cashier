@@ -31,6 +31,7 @@ interface TenantDetail {
     settings: {
       kitchen_mode_enabled: boolean
       conflict_resolution_mode: string
+      intro_video_url: string
     }
     created_at: string
   }
@@ -40,6 +41,68 @@ interface TenantDetail {
 
 const detail = ref<TenantDetail | null>(null)
 const activeTab = ref<'info' | 'users' | 'devices'>('info')
+
+const videoUploading = ref(false)
+const videoError = ref<string | null>(null)
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+
+async function uploadVideo(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !detail.value) return
+
+  videoUploading.value = true
+  videoError.value = null
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const adminToken = localStorage.getItem('admin_token') || ''
+    const uploadResp = await fetch(`${API_BASE}/api/v1/uploads?folder=tenant-videos`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${adminToken}` },
+      body: formData,
+    })
+
+    if (!uploadResp.ok) {
+      const body = await uploadResp.json().catch(() => ({}))
+      throw new Error(body.error || `Upload failed (${uploadResp.status})`)
+    }
+
+    const uploadData = await uploadResp.json()
+    const videoUrl = uploadData.data?.url || uploadData.url
+
+    await put(`/api/v1/admin/tenants/${route.params.id}`, {
+      settings: {
+        ...detail.value.tenant.settings,
+        intro_video_url: videoUrl,
+      },
+    })
+    detail.value.tenant.settings.intro_video_url = videoUrl
+  } catch (e: any) {
+    videoError.value = e.message
+  } finally {
+    videoUploading.value = false
+    input.value = ''
+  }
+}
+
+async function removeVideo() {
+  if (!detail.value) return
+  try {
+    await put(`/api/v1/admin/tenants/${route.params.id}`, {
+      settings: {
+        ...detail.value.tenant.settings,
+        intro_video_url: '',
+      },
+    })
+    detail.value.tenant.settings.intro_video_url = ''
+  } catch {
+    // handled by useApi
+  }
+}
 
 // Add user form
 const showAddUser = ref(false)
@@ -218,6 +281,25 @@ function formatLastSeen(iso: string | null): string {
             <button class="btn btn-sm btn-secondary" @click="toggleConflictMode">
               تبديل
             </button>
+          </div>
+
+          <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: var(--space-3);">
+            <div>
+              <div class="setting-label">فيديو شاشة الدخول</div>
+              <div class="setting-desc">فيديو تعريفي يظهر خلف شاشة تسجيل الدخول في تطبيق نقطة البيع</div>
+            </div>
+            <div v-if="videoError" class="alert alert-error" style="margin: 0;">{{ videoError }}</div>
+            <div v-if="detail.tenant.settings.intro_video_url" class="video-preview">
+              <video :src="detail.tenant.settings.intro_video_url" class="video-thumb" muted playsinline controls></video>
+              <div class="video-actions">
+                <span class="video-url" :title="detail.tenant.settings.intro_video_url">{{ detail.tenant.settings.intro_video_url.split('/').pop() }}</span>
+                <button class="btn btn-sm btn-danger" @click="removeVideo">حذف</button>
+              </div>
+            </div>
+            <label class="upload-btn" :class="{ disabled: videoUploading }">
+              <input type="file" accept="video/mp4" hidden @change="uploadVideo" :disabled="videoUploading" />
+              {{ videoUploading ? 'جاري الرفع...' : (detail.tenant.settings.intro_video_url ? 'تغيير الفيديو' : 'رفع فيديو') }}
+            </label>
           </div>
         </div>
       </div>
@@ -417,5 +499,60 @@ function formatLastSeen(iso: string | null): string {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+}
+
+.video-preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.video-thumb {
+  width: 100%;
+  max-height: 200px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.3);
+  object-fit: contain;
+}
+
+.video-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.video-url {
+  font-size: var(--font-sm);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+}
+
+.upload-btn:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.upload-btn.disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 </style>
