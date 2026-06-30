@@ -30,6 +30,11 @@ const router = createRouter({
       name: 'tenant-detail',
       component: () => import('../views/TenantDetailView.vue'),
     },
+    {
+      path: '/app-release',
+      name: 'app-release',
+      component: () => import('../views/AppReleaseView.vue'),
+    },
   ],
 })
 

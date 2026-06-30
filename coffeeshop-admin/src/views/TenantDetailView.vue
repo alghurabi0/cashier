@@ -45,6 +45,10 @@ const activeTab = ref<'info' | 'users' | 'devices'>('info')
 const videoUploading = ref(false)
 const videoError = ref<string | null>(null)
 
+const provisionCode = ref<string | null>(null)
+const provisionExpiry = ref<string | null>(null)
+const generatingCode = ref(false)
+
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
 async function uploadVideo(event: Event) {
@@ -205,6 +209,29 @@ function formatLastSeen(iso: string | null): string {
   if (!iso) return 'لم يظهر بعد'
   return formatDate(iso)
 }
+
+async function generateProvisionCode() {
+  if (!detail.value) return
+  generatingCode.value = true
+  try {
+    const resp = await post<{ code: string; expires_at: string }>(
+      `/api/v1/admin/tenants/${route.params.id}/provision-code`,
+      {},
+    )
+    provisionCode.value = resp.code
+    provisionExpiry.value = resp.expires_at
+  } catch {
+    // handled by useApi
+  } finally {
+    generatingCode.value = false
+  }
+}
+
+function copyCode() {
+  if (provisionCode.value) {
+    navigator.clipboard.writeText(provisionCode.value)
+  }
+}
 </script>
 
 <template>
@@ -300,6 +327,30 @@ function formatLastSeen(iso: string | null): string {
               <input type="file" accept="video/mp4" hidden @change="uploadVideo" :disabled="videoUploading" />
               {{ videoUploading ? 'جاري الرفع...' : (detail.tenant.settings.intro_video_url ? 'تغيير الفيديو' : 'رفع فيديو') }}
             </label>
+          </div>
+
+          <!-- Provision Code -->
+          <div class="setting-row" style="flex-direction: column; align-items: stretch; gap: var(--space-3);">
+            <div>
+              <div class="setting-label">رمز الإعداد (Provisioning)</div>
+              <div class="setting-desc">توليد رمز إعداد لمرة واحدة لربط تطبيق نقطة البيع بهذا المستأجر</div>
+            </div>
+
+            <div v-if="provisionCode" class="provision-result">
+              <div class="provision-code-display">{{ provisionCode }}</div>
+              <div class="provision-meta">
+                <span>صالح حتى {{ formatDate(provisionExpiry!) }}</span>
+                <button class="btn btn-sm btn-secondary" @click="copyCode">📋 نسخ</button>
+              </div>
+            </div>
+
+            <button
+              class="btn btn-primary"
+              :disabled="generatingCode"
+              @click="generateProvisionCode"
+            >
+              {{ generatingCode ? 'جاري التوليد...' : (provisionCode ? 'توليد رمز جديد' : 'توليد رمز إعداد') }}
+            </button>
           </div>
         </div>
       </div>
@@ -554,5 +605,34 @@ function formatLastSeen(iso: string | null): string {
 .upload-btn.disabled {
   opacity: 0.5;
   pointer-events: none;
+}
+
+.provision-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--accent-bg);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--accent);
+}
+
+.provision-code-display {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.4em;
+  color: var(--accent);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  direction: ltr;
+  user-select: all;
+}
+
+.provision-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-sm);
+  color: var(--text-muted);
 }
 </style>

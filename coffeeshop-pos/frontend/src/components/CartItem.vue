@@ -35,16 +35,16 @@ const emit = defineEmits<{
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: #1e1e1e;
-  border: 1px solid rgba(255,255,255,0.04);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   position: relative;
   transition: background 0.15s ease;
 }
 
 .cart-item:hover {
-  background: #242424;
-  border-color: rgba(201,168,76,0.12);
+  background: var(--color-surface-2);
+  border-color: var(--color-border-light);
 }
 
 .item-info {
@@ -58,7 +58,7 @@ const emit = defineEmits<{
 .item-name {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #e8dcc8;
+  color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -66,14 +66,14 @@ const emit = defineEmits<{
 
 .item-unit {
   font-size: 0.7rem;
-  color: #555;
+  color: var(--color-text-dim);
 }
 
 .item-controls {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: #111;
+  background: var(--color-cart-bg);
   border-radius: 8px;
   padding: 3px;
 }
@@ -83,7 +83,7 @@ const emit = defineEmits<{
   height: 26px;
   border: none;
   background: transparent;
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 1rem;
   font-family: inherit;
   cursor: pointer;
@@ -95,8 +95,8 @@ const emit = defineEmits<{
 }
 
 .qty-btn:hover {
-  background: #222;
-  color: #c9a84c;
+  background: var(--color-surface-2);
+  color: var(--color-accent);
 }
 
 .qty-val {
@@ -104,14 +104,14 @@ const emit = defineEmits<{
   text-align: center;
   font-size: 0.85rem;
   font-weight: 800;
-  color: #f0e6d3;
+  color: var(--color-text);
   font-variant-numeric: tabular-nums;
 }
 
 .item-total {
   font-size: 0.9rem;
   font-weight: 800;
-  color: #c9a84c;
+  color: var(--color-accent);
   font-variant-numeric: tabular-nums;
   min-width: 56px;
   text-align: left;
@@ -122,7 +122,7 @@ const emit = defineEmits<{
   height: 22px;
   border: none;
   background: transparent;
-  color: #444;
+  color: var(--color-text-dim);
   cursor: pointer;
   font-size: 0.7rem;
   border-radius: 50%;
@@ -135,5 +135,5 @@ const emit = defineEmits<{
 }
 
 .cart-item:hover .remove-btn { opacity: 1; }
-.remove-btn:hover { color: #e74c3c; background: rgba(231,76,60,0.12); }
+.remove-btn:hover { color: var(--color-danger); background: rgba(231,76,60,0.12); }
 </style>

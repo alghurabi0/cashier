@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { CashierMenu } from '@cashier/menu-sdk'
 import type { Category, MenuItem, TenantInfo, TableInfo } from '@cashier/menu-sdk'
 
@@ -11,9 +11,11 @@ const tenantInfo = ref<TenantInfo | null>(null)
 const tableInfo = ref<TableInfo | null>(null)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
+const isLoaded = computed(() => tenantInfo.value !== null)
 
 export function useMenu() {
   async function loadAll(token: string) {
+    if (isLoaded.value) return
     isLoading.value = true
     error.value = null
     try {
@@ -35,6 +37,7 @@ export function useMenu() {
     tenantInfo,
     tableInfo,
     isLoading,
+    isLoaded,
     error,
     loadAll,
   }

@@ -33,6 +33,12 @@ function statusLabel(status: string): string {
 function sourceLabel(source: string): string {
   return source === 'web_menu' ? '🌐 ويب' : '📋 كاشير'
 }
+
+function formatTime(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })
+}
 </script>
 
 <template>
@@ -66,18 +72,26 @@ function sourceLabel(source: string): string {
       <div class="order-list">
         <div v-if="isLoading" class="loading">جاري التحميل...</div>
         <div v-else-if="orders.length === 0" class="empty">لا توجد طلبات في هذه الفترة</div>
-        <button
-          v-for="order in orders"
-          :key="order.id"
-          class="order-row"
-          :class="{ active: selectedOrder?.id === order.id, voided: order.status === 'voided' }"
-          @click="selectedOrder = order"
-        >
-          <span class="order-num">{{ order.order_number }}</span>
-          <span class="order-source">{{ sourceLabel(order.source) }}</span>
-          <span class="order-total">{{ formatPrice(order.total) }}</span>
-          <span class="order-status" :class="order.status">{{ statusLabel(order.status) }}</span>
-        </button>
+        <template v-else>
+          <button
+            v-for="order in orders"
+            :key="order.id"
+            class="order-row"
+            :class="{ active: selectedOrder?.id === order.id, voided: order.status === 'voided' }"
+            @click="selectedOrder = order"
+          >
+            <div class="order-main">
+              <span class="order-num">{{ order.order_number }}</span>
+              <span class="order-source">{{ sourceLabel(order.source) }}</span>
+              <span class="order-total">{{ formatPrice(order.total) }}</span>
+              <span class="order-status" :class="order.status">{{ statusLabel(order.status) }}</span>
+            </div>
+            <div class="order-sub">
+              <span class="order-time">{{ formatTime(order.created_at) }}</span>
+              <span v-if="order.table_number" class="order-table">🪑 {{ order.table_number }}</span>
+            </div>
+          </button>
+        </template>
       </div>
 
       <!-- Order detail panel -->
@@ -235,8 +249,8 @@ function sourceLabel(source: string): string {
 
 .order-row {
   display: flex;
-  align-items: center;
-  gap: var(--gap-md);
+  flex-direction: column;
+  gap: 2px;
   padding: var(--gap-md) var(--gap-lg);
   border: none;
   border-bottom: 1px solid var(--color-border);
@@ -246,6 +260,20 @@ function sourceLabel(source: string): string {
   font-family: var(--font-family);
   text-align: right;
   transition: background var(--transition-fast);
+}
+
+.order-main {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+}
+
+.order-sub {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
 }
 
 .order-row:hover {

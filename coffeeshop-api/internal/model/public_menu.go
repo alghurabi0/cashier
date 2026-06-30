@@ -11,8 +11,9 @@ type PublicMenuResponse struct {
 
 // PublicTenantInfo is the minimal tenant info exposed to public menu sites.
 type PublicTenantInfo struct {
-	Name string `json:"name"`
-	Slug string `json:"slug"`
+	Name          string `json:"name"`
+	Slug          string `json:"slug"`
+	IntroVideoURL string `json:"intro_video_url,omitempty"`
 }
 
 // PublicTableInfo is the minimal table info exposed to public menu sites.

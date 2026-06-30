@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { parseWailsError } from '../utils/errors'
 
 let ConfigStoreService: any = null
 
@@ -34,7 +35,22 @@ export function useConfigStore() {
       await ConfigStoreService.SetupAPIConnection(apiURL, username, password)
       isSetup.value = true
     } catch (err: any) {
-      error.value = err?.message || 'فشل الاتصال بالخادم'
+      error.value = parseWailsError(err, 'فشل الاتصال بالخادم')
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function provisionWithCode(apiURL: string, code: string) {
+    if (!ConfigStoreService) return
+    error.value = null
+    isLoading.value = true
+    try {
+      await ConfigStoreService.ProvisionWithCode(apiURL, code)
+      isSetup.value = true
+    } catch (err: any) {
+      error.value = parseWailsError(err, 'فشل التفعيل برمز الإعداد')
       throw err
     } finally {
       isLoading.value = false
@@ -57,6 +73,7 @@ export function useConfigStore() {
     initBindings,
     checkSetup,
     setupConnection,
+    provisionWithCode,
     getConnection,
   }
 }

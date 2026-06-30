@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { Category, InventoryItem, MenuItem, RecipeIngredientWithDetails } from '../types'
+import { parseWailsError } from '../utils/errors'
 
 // Reactive state for management views
 const inventoryItems = ref<InventoryItem[]>([])
@@ -34,7 +35,7 @@ export function useManagement() {
       categories.value = result || []
     } catch (err: any) {
       console.error('Failed to load categories:', err)
-      error.value = err.message
+      error.value = parseWailsError(err)
     }
   }
 
@@ -45,7 +46,7 @@ export function useManagement() {
       inventoryItems.value = result || []
     } catch (err: any) {
       console.error('Failed to load inventory:', err)
-      error.value = err.message
+      error.value = parseWailsError(err)
     }
   }
 

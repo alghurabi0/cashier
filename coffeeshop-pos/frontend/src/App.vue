@@ -11,9 +11,11 @@ import OrderHistoryView from './views/OrderHistoryView.vue'
 import ReportsView from './views/ReportsView.vue'
 import InventoryView from './views/InventoryView.vue'
 import SettingsView from './views/SettingsView.vue'
+import UpdateNotification from './components/UpdateNotification.vue'
 import { useAuth } from './composables/useAuth'
 import { useConfigStore } from './composables/useConfigStore'
 import { useWebOrders } from './composables/useWebOrders'
+import { useUpdater } from './composables/useUpdater'
 
 const activeView = ref('pos')
 const lastSyncTime = ref('')
@@ -40,6 +42,7 @@ async function pollSyncTime() {
 const { currentUser, initBindings: initAuth, checkExistingSession, logout } = useAuth()
 const { isSetup, initBindings: initConfig, checkSetup } = useConfigStore()
 const { pendingCount, initBindings: initWebOrders, startPolling, stopPolling } = useWebOrders()
+const { initBindings: initUpdater, startPeriodicCheck } = useUpdater()
 
 const isLoggedIn = computed(() => currentUser.value !== null)
 const userRole = computed(() => currentUser.value?.role || 'cashier')
@@ -59,12 +62,18 @@ onMounted(async () => {
     return
   }
 
-  // Load kitchen mode setting
+  // Load settings
   try {
     ConfigStoreService = await import('../bindings/coffeeshop-pos/internal/service/configstoreservice')
     const kitchenVal = await ConfigStoreService.Get('kitchen_mode_enabled')
     kitchenModeEnabled.value = kitchenVal === 'true'
+    const theme = await ConfigStoreService.Get('theme')
+    if (theme) document.documentElement.dataset.theme = theme
   } catch { /* not available */ }
+
+  // Init auto-updater
+  await initUpdater()
+  startPeriodicCheck()
 
   // API is configured — check for existing PIN session
   await checkExistingSession()
@@ -136,6 +145,7 @@ async function onLogout() {
     />
 
     <div class="app-content">
+      <UpdateNotification />
       <div class="app-main">
         <PosView v-if="activeView === 'pos'" />
         <WebOrdersView v-else-if="activeView === 'web-orders'" />

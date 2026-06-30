@@ -67,6 +67,15 @@ func (r *UserRepository) Count(tenantID uuid.UUID) (int, error) {
 	return count, nil
 }
 
+// UpdatePassword updates a user's password hash.
+func (r *UserRepository) UpdatePassword(userID uuid.UUID, passwordHash string) error {
+	_, err := r.db.Exec(`UPDATE users SET password_hash = $1 WHERE id = $2`, passwordHash, userID)
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+	return nil
+}
+
 // ListByTenant returns all users for a tenant.
 func (r *UserRepository) ListByTenant(tenantID uuid.UUID) ([]model.User, error) {
 	var users []model.User

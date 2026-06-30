@@ -58,6 +58,26 @@ type LoginResponse struct {
 		Settings struct {
 			KitchenModeEnabled     bool   `json:"kitchen_mode_enabled"`
 			ConflictResolutionMode string `json:"conflict_resolution_mode"`
+			MenuURL                string `json:"menu_url"`
+			IntroVideoURL          string `json:"intro_video_url"`
+		} `json:"settings"`
+	} `json:"tenant"`
+}
+
+// ProvisionResponse contains the data returned after provisioning with a code.
+type ProvisionResponse struct {
+	Token    string `json:"token"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Tenant   struct {
+		ID       string `json:"id"`
+		Name     string `json:"name"`
+		Slug     string `json:"slug"`
+		Settings struct {
+			KitchenModeEnabled     bool   `json:"kitchen_mode_enabled"`
+			ConflictResolutionMode string `json:"conflict_resolution_mode"`
+			MenuURL                string `json:"menu_url"`
+			IntroVideoURL          string `json:"intro_video_url"`
 		} `json:"settings"`
 	} `json:"tenant"`
 }
@@ -86,6 +106,29 @@ func (c *APIClient) Login(username, password string) (*LoginResponse, error) {
 
 	c.token = result.Data.Token
 	return &result.Data, nil
+}
+
+// Provision calls POST /api/v1/provision with a setup code.
+func (c *APIClient) Provision(code string) (*ProvisionResponse, error) {
+	body := fmt.Sprintf(`{"code":%q}`, code)
+	resp, err := c.doRequest("POST", "/api/v1/provision", strings.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("provision failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("provision failed with status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var result ProvisionResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode provision response: %w", err)
+	}
+
+	c.token = result.Token
+	return &result, nil
 }
 
 // GetCategories fetches all active categories from the API.

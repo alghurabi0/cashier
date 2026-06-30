@@ -10,7 +10,7 @@ import SyncDashboardPanel from '../components/settings/SyncDashboardPanel.vue'
 const { initBindings, isLoading } = useManagement()
 const { currentUser } = useAuth()
 
-const isDevUser = computed(() => currentUser.value?.role === 'dev' || currentUser.value?.role === 'admin')
+const isDevUser = computed(() => currentUser.value?.role === 'dev')
 
 // Sub-navigation within settings
 const activeTab = ref<'general' | 'sync'>('general')
@@ -19,6 +19,10 @@ const shopName = ref('المقهى')
 const menuBaseURL = ref('')
 const menuURLSaved = ref(false)
 const kitchenModeEnabled = ref(false)
+const isDarkMode = ref(true)
+const appVersion = ref('')
+const appCommit = ref('')
+const appBuildDate = ref('')
 
 let ConfigStoreService: any = null
 
@@ -28,11 +32,29 @@ onMounted(async () => {
     ConfigStoreService = await import('../../bindings/coffeeshop-pos/internal/service/configstoreservice')
     const savedURL = await ConfigStoreService.Get('menu_base_url')
     if (savedURL) menuBaseURL.value = savedURL
-    // Load kitchen mode setting
     const kitchenVal = await ConfigStoreService.Get('kitchen_mode_enabled')
     kitchenModeEnabled.value = kitchenVal === 'true'
+    const theme = await ConfigStoreService.Get('theme')
+    isDarkMode.value = theme !== 'light'
+  } catch { /* not available */ }
+  try {
+    const vs = await import('../../bindings/coffeeshop-pos/internal/service/versionservice')
+    const info = await vs.GetFullVersion()
+    appVersion.value = info.version || 'dev'
+    appCommit.value = info.commit || ''
+    appBuildDate.value = info.buildDate || ''
   } catch { /* not available */ }
 })
+
+async function toggleTheme() {
+  if (!ConfigStoreService) return
+  isDarkMode.value = !isDarkMode.value
+  const theme = isDarkMode.value ? 'dark' : 'light'
+  document.documentElement.dataset.theme = theme
+  try {
+    await ConfigStoreService.Set('theme', theme)
+  } catch { /* ignore */ }
+}
 
 async function toggleKitchenMode() {
   if (!ConfigStoreService) return
@@ -93,9 +115,20 @@ async function saveMenuBaseURL() {
 
       <div class="settings-divider"></div>
 
-      <!-- API Connection -->
+      <!-- Theme -->
       <div class="settings-section">
-        <APIConnectionPanel />
+        <h2 class="settings-section-title">🎨 المظهر</h2>
+        <div class="form-group">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="form-label">{{ isDarkMode ? 'الوضع الداكن' : 'الوضع الفاتح' }}</span>
+              <p class="form-hint text-muted text-sm">تبديل بين المظهر الداكن والفاتح</p>
+            </div>
+            <button class="theme-toggle-btn" @click="toggleTheme">
+              {{ isDarkMode ? '☀️' : '🌙' }}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="settings-divider"></div>
@@ -140,6 +173,13 @@ async function saveMenuBaseURL() {
       <!-- Dev Settings (role-guarded) -->
       <template v-if="isDevUser">
         <div class="settings-divider"></div>
+
+        <!-- API Connection -->
+        <div class="settings-section">
+          <APIConnectionPanel />
+        </div>
+
+        <div class="settings-divider"></div>
         <div class="settings-section">
           <h2 class="settings-section-title">🔧 إعدادات المطور</h2>
           <div class="form-group">
@@ -167,11 +207,15 @@ async function saveMenuBaseURL() {
         <div class="about-info">
           <div class="about-row">
             <span class="text-muted">الإصدار</span>
-            <span>1.0.0-alpha</span>
+            <span>{{ appVersion || 'dev' }}</span>
           </div>
-          <div class="about-row">
-            <span class="text-muted">النظام</span>
-            <span>Wails v3 + Vue 3</span>
+          <div class="about-row" v-if="appCommit">
+            <span class="text-muted">البناء</span>
+            <span>{{ appCommit }}</span>
+          </div>
+          <div class="about-row" v-if="appBuildDate">
+            <span class="text-muted">تاريخ البناء</span>
+            <span>{{ appBuildDate }}</span>
           </div>
         </div>
       </div>
@@ -351,5 +395,24 @@ async function saveMenuBaseURL() {
 
 .toggle-btn.active .toggle-knob {
   transform: translateX(24px);
+}
+
+.theme-toggle-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  font-size: 1.4rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--color-accent);
+  background: var(--color-surface-3);
 }
 </style>

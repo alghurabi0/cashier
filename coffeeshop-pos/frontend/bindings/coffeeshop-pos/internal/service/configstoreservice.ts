@@ -68,6 +68,14 @@ export function IsSetup(): $CancellablePromise<boolean> {
 }
 
 /**
+ * ProvisionWithCode provisions this POS using a setup code.
+ * Calls the provision endpoint, stores all returned config, and logs in.
+ */
+export function ProvisionWithCode(apiURL: string, code: string): $CancellablePromise<void> {
+    return $Call.ByID(3149707434, apiURL, code);
+}
+
+/**
  * Set writes a config value.
  */
 export function Set(key: string, value: string): $CancellablePromise<void> {

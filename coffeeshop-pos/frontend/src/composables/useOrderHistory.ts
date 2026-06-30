@@ -54,6 +54,8 @@ export function useOrderHistory() {
   async function loadOrders() {
     if (!OrderService) return
     isLoading.value = true
+    selectedOrder.value = null
+    orders.value = []
     try {
       const result = await OrderService.GetOrdersByDateRange(dateFrom.value, dateTo.value)
       orders.value = result || []

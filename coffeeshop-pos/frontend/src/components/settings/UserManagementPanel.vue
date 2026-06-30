@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import type { LocalUser } from '../../composables/useAuth'
+import { parseWailsError } from '../../utils/errors'
 
 let AuthService: any = null
 
@@ -41,7 +42,7 @@ async function createUser() {
     showForm.value = false
     await loadUsers()
   } catch (err: any) {
-    formError.value = err?.message || 'فشل إنشاء المستخدم'
+    formError.value = parseWailsError(err, 'فشل إنشاء المستخدم')
   }
 }
 
@@ -85,7 +86,7 @@ onMounted(async () => {
     <div v-if="showForm" class="add-form">
       <div class="form-row">
         <input v-model="newName" type="text" placeholder="الاسم" class="form-input" />
-        <input v-model="newPin" type="password" placeholder="رمز PIN" class="form-input" style="width: 100px" />
+        <input v-model="newPin" type="password" placeholder="PIN (٤ أرقام)" class="form-input" style="width: 120px" maxlength="4" minlength="4" pattern="\d{4}" />
         <select v-model="newRole" class="form-input">
           <option value="cashier">كاشير</option>
           <option value="kitchen">مطبخ</option>
@@ -116,7 +117,7 @@ onMounted(async () => {
 
         <!-- Inline change PIN -->
         <div v-if="changePinUserId === user.id" class="change-pin-row">
-          <input v-model="changePinValue" type="password" placeholder="PIN جديد" class="form-input" style="width: 120px" />
+          <input v-model="changePinValue" type="password" placeholder="PIN جديد (٤ أرقام)" class="form-input" style="width: 140px" maxlength="4" minlength="4" pattern="\d{4}" />
           <button class="btn btn-primary btn-sm" @click="changePin">تحديث</button>
         </div>
       </div>

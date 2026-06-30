@@ -116,14 +116,14 @@ function selectTable(number: string) {
 }
 
 .dialog {
-  background: #161616;
-  border: 1px solid rgba(201,168,76,0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
   border-radius: 20px;
   padding: 28px;
   min-width: 420px;
   max-width: 500px;
   width: 90vw;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(201,168,76,0.06);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px var(--color-border-light);
   animation: slideUp 0.2s ease;
 }
 
@@ -139,7 +139,7 @@ function selectTable(number: string) {
   gap: 10px;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .dialog-icon { font-size: 1.4rem; }
@@ -147,7 +147,7 @@ function selectTable(number: string) {
 .dialog-title {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #f0e6d3;
+  color: var(--color-text);
 }
 
 /* Items */
@@ -169,7 +169,7 @@ function selectTable(number: string) {
 }
 
 .item-qty {
-  color: #c9a84c;
+  color: var(--color-accent);
   font-weight: 800;
   min-width: 28px;
   font-size: 0.82rem;
@@ -181,7 +181,7 @@ function selectTable(number: string) {
 }
 
 .item-price {
-  color: #888;
+  color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   font-size: 0.82rem;
 }
@@ -192,21 +192,21 @@ function selectTable(number: string) {
   justify-content: space-between;
   align-items: baseline;
   padding: 14px 0;
-  border-top: 1px solid rgba(201,168,76,0.15);
-  border-bottom: 1px solid rgba(201,168,76,0.15);
+  border-top: 1px solid var(--color-border-light);
+  border-bottom: 1px solid var(--color-border-light);
   margin-bottom: 18px;
 }
 
 .total-label {
   font-size: 0.9rem;
-  color: #888;
+  color: var(--color-text-muted);
   font-weight: 600;
 }
 
 .total-val {
   font-size: 1.6rem;
   font-weight: 800;
-  color: #c9a84c;
+  color: var(--color-accent);
   font-variant-numeric: tabular-nums;
 }
 
@@ -224,7 +224,7 @@ function selectTable(number: string) {
 .section-label {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #666;
+  color: var(--color-text-muted);
   margin-bottom: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -232,7 +232,7 @@ function selectTable(number: string) {
 
 .optional {
   font-weight: 400;
-  color: #444;
+  color: var(--color-text-dim);
 }
 
 /* Table */
@@ -244,10 +244,10 @@ function selectTable(number: string) {
 
 .table-btn {
   padding: 7px 16px;
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid var(--color-border);
   border-radius: 999px;
-  background: #222;
-  color: #888;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
   font-family: inherit;
   font-size: 0.82rem;
   font-weight: 700;
@@ -256,14 +256,14 @@ function selectTable(number: string) {
 }
 
 .table-btn:hover {
-  border-color: rgba(201,168,76,0.35);
-  color: #c9a84c;
+  border-color: var(--color-accent-glow);
+  color: var(--color-accent);
 }
 
 .table-btn.active {
-  background: rgba(201,168,76,0.15);
-  border-color: #c9a84c;
-  color: #c9a84c;
+  background: var(--color-border-light);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 /* Payment */
@@ -274,10 +274,10 @@ function selectTable(number: string) {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  border: 1px solid rgba(201,168,76,0.3);
+  border: 1px solid var(--color-accent-glow);
   border-radius: 10px;
-  background: rgba(201,168,76,0.08);
-  color: #c9a84c;
+  background: var(--color-border-light);
+  color: var(--color-accent);
   font-family: inherit;
   font-size: 0.88rem;
   font-weight: 700;
@@ -293,10 +293,10 @@ function selectTable(number: string) {
 
 .cancel-btn {
   padding: 12px 20px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   background: transparent;
-  color: #666;
+  color: var(--color-text-muted);
   font-family: inherit;
   font-size: 0.88rem;
   font-weight: 700;
@@ -305,8 +305,8 @@ function selectTable(number: string) {
 }
 
 .cancel-btn:hover {
-  background: #222;
-  color: #999;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
 }
 
 .confirm-btn {
@@ -314,19 +314,19 @@ function selectTable(number: string) {
   padding: 14px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
   color: #0d0d0d;
   font-family: inherit;
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.18s ease;
-  box-shadow: 0 4px 20px rgba(201,168,76,0.3);
+  box-shadow: 0 4px 20px var(--color-accent-glow);
 }
 
 .confirm-btn:hover {
   filter: brightness(1.08);
-  box-shadow: 0 6px 28px rgba(201,168,76,0.45);
+  box-shadow: 0 6px 28px var(--color-accent-glow);
 }
 
 .confirm-btn:active {

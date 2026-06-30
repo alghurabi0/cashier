@@ -69,9 +69,26 @@ async function loadCategories() {
   try {
     const result = await DataService.GetCategories()
     categories.value = result || []
-    syncStatus.value = 'online'
   } catch (err) {
     console.error('Failed to load categories:', err)
+  }
+}
+
+let SyncServiceMod: any = null
+async function pollSyncStatus() {
+  if (!SyncServiceMod) {
+    try {
+      SyncServiceMod = await import('../../bindings/coffeeshop-pos/internal/service/syncservice')
+    } catch { return }
+  }
+  try {
+    const status = await SyncServiceMod.GetSyncStatus()
+    if (status.is_syncing) {
+      syncStatus.value = 'syncing'
+    } else {
+      syncStatus.value = status.is_connected ? 'online' : 'offline'
+    }
+  } catch {
     syncStatus.value = 'offline'
   }
 }
@@ -151,8 +168,9 @@ function showToast(message: string) {
   setTimeout(() => { toastVisible.value = false }, 3000)
 }
 
-// ── Order queue polling ──
+// ── Polling ──
 let queuePoll: ReturnType<typeof setInterval> | null = null
+let statusPoll: ReturnType<typeof setInterval> | null = null
 
 // ── Lifecycle ──
 onMounted(async () => {
@@ -160,18 +178,15 @@ onMounted(async () => {
   await loadCategories()
   await loadMenuItems(null)
   await loadTodayOrders()
+  await pollSyncStatus()
 
-  // Poll for order status changes (kitchen may complete orders)
-  queuePoll = setInterval(() => {
-    loadTodayOrders()
-  }, 5000)
+  queuePoll = setInterval(loadTodayOrders, 5000)
+  statusPoll = setInterval(pollSyncStatus, 5000)
 })
 
 onUnmounted(() => {
-  if (queuePoll) {
-    clearInterval(queuePoll)
-    queuePoll = null
-  }
+  if (queuePoll) { clearInterval(queuePoll); queuePoll = null }
+  if (statusPoll) { clearInterval(statusPoll); statusPoll = null }
 })
 </script>
 

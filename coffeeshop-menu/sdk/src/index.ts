@@ -3,6 +3,7 @@
 export interface TenantInfo {
   name: string
   slug: string
+  intro_video_url?: string
 }
 
 export interface TableInfo {

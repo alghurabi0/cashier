@@ -111,12 +111,12 @@ onMounted(loadConnection)
 
 .status-badge.connected {
   background: rgba(46, 204, 113, 0.15);
-  color: #2ecc71;
+  color: var(--color-success);
 }
 
 .status-badge.disconnected {
   background: rgba(231, 76, 60, 0.15);
-  color: #e74c3c;
+  color: var(--color-danger);
 }
 
 .connection-info {
@@ -177,7 +177,7 @@ onMounted(loadConnection)
 }
 
 .form-success {
-  color: #2ecc71;
+  color: var(--color-success);
   font-size: var(--font-size-sm);
 }
 

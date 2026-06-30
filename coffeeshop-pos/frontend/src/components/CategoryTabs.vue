@@ -60,7 +60,7 @@ function getEmoji(name: string) {
   overflow-x: auto;
   flex-shrink: 0;
   scrollbar-width: none;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .cat-bar::-webkit-scrollbar { display: none; }
@@ -71,10 +71,10 @@ function getEmoji(name: string) {
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  border: 1px solid rgba(201,168,76,0.15);
+  border: 1px solid var(--color-border-light);
   border-radius: 999px;
-  background: #1a1a1a;
-  color: #666;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   font-family: var(--font-family);
   cursor: pointer;
   white-space: nowrap;
@@ -85,16 +85,16 @@ function getEmoji(name: string) {
 }
 
 .cat-tab:hover {
-  border-color: rgba(201,168,76,0.35);
-  color: #c9a84c;
-  background: #222;
+  border-color: var(--color-accent-glow);
+  color: var(--color-accent);
+  background: var(--color-surface-2);
 }
 
 .cat-tab.active {
-  background: linear-gradient(135deg, #c9a84c, #e6c56a);
-  border-color: #c9a84c;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
+  border-color: var(--color-accent);
   color: #0d0d0d;
-  box-shadow: 0 4px 16px rgba(201,168,76,0.35);
+  box-shadow: 0 4px 16px var(--color-accent-glow);
 }
 
 .cat-emoji {

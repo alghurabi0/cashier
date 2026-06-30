@@ -80,8 +80,9 @@ func (s *PublicMenuService) GetMenu(token string) (*model.PublicMenuResponse, er
 
 	return &model.PublicMenuResponse{
 		Tenant: model.PublicTenantInfo{
-			Name: tenant.Name,
-			Slug: tenant.Slug,
+			Name:          tenant.Name,
+			Slug:          tenant.Slug,
+			IntroVideoURL: tenant.Settings.IntroVideoURL,
 		},
 		Table: model.PublicTableInfo{
 			Number: table.Number,

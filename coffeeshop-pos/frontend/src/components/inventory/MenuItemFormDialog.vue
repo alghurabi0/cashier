@@ -204,14 +204,14 @@ async function onSubmit() {
 }
 
 .dialog {
-  background: #161616;
-  border: 1px solid rgba(201,168,76,0.2);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
   border-radius: 18px;
   padding: 24px;
   width: min(540px, 92vw);
   max-height: 92vh;
   overflow-y: auto;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  box-shadow: var(--shadow-lg);
   animation: slideUp 0.2s ease;
 }
 
@@ -220,23 +220,23 @@ async function onSubmit() {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.dialog-title { font-size: 1rem; font-weight: 800; color: #f0e6d3; margin-bottom: 20px; }
+.dialog-title { font-size: 1rem; font-weight: 800; color: var(--color-text); margin-bottom: 20px; }
 
 .form { display: flex; flex-direction: column; gap: 14px; }
 
 .field { display: flex; flex-direction: column; gap: 5px; }
-.field label { font-size: 0.75rem; font-weight: 700; color: #666; }
+.field label { font-size: 0.75rem; font-weight: 700; color: var(--color-text-muted); }
 .field input, .field select {
   padding: 10px 12px;
-  background: #222;
-  border: 1px solid rgba(255,255,255,0.07);
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  color: #f0e6d3;
+  color: var(--color-text);
   font-family: inherit;
   font-size: 0.9rem;
   transition: border-color 0.15s;
 }
-.field input:focus, .field select:focus { outline: none; border-color: #c9a84c; }
+.field input:focus, .field select:focus { outline: none; border-color: var(--color-accent); }
 
 .field-row { display: flex; gap: 12px; }
 .field-row .field { flex: 1; }
@@ -252,14 +252,14 @@ async function onSubmit() {
   position: relative;
   min-height: 104px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
-  background: #101010;
+  background: var(--color-bg);
 }
 
 .image-preview.empty {
   border-style: dashed;
-  border-color: rgba(201,168,76,0.24);
+  border-color: var(--color-border-light);
 }
 
 .image-preview img {
@@ -314,9 +314,9 @@ async function onSubmit() {
 }
 
 .secondary-btn {
-  border: 1px solid rgba(201,168,76,0.28);
-  background: rgba(201,168,76,0.08);
-  color: #e6c56a;
+  border: 1px solid var(--color-border-light);
+  background: var(--color-border-light);
+  color: var(--color-accent-hover);
 }
 
 .danger-btn {
@@ -348,14 +348,14 @@ async function onSubmit() {
 .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 
 .cancel-btn {
-  padding: 10px 18px; border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px; background: transparent; color: #666;
+  padding: 10px 18px; border: 1px solid var(--color-border);
+  border-radius: 10px; background: transparent; color: var(--color-text-muted);
   font-family: inherit; font-size: 0.88rem; font-weight: 700; cursor: pointer;
 }
 
 .save-btn {
   padding: 10px 24px; border: none;
-  border-radius: 10px; background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  border-radius: 10px; background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
   color: #0d0d0d; font-family: inherit; font-size: 0.88rem; font-weight: 800; cursor: pointer;
 }
 

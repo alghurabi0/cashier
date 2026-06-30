@@ -65,9 +65,19 @@ export function ListUsers(): $CancellablePromise<$models.LocalUser[]> {
 
 /**
  * Login verifies the PIN and sets the current user session.
+ * Deprecated: use LoginUser for user-specific PIN validation.
  */
 export function Login(pin: string): $CancellablePromise<$models.LocalUser | null> {
     return $Call.ByID(1049523718, pin).then(($result: any) => {
+        return $$createType1($result);
+    });
+}
+
+/**
+ * LoginUser validates the PIN for a specific user and sets the session.
+ */
+export function LoginUser(userID: string, pin: string): $CancellablePromise<$models.LocalUser | null> {
+    return $Call.ByID(659093721, userID, pin).then(($result: any) => {
         return $$createType1($result);
     });
 }

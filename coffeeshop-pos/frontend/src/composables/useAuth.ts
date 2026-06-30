@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { parseWailsError } from '../utils/errors'
 
 let AuthService: any = null
 
@@ -33,15 +34,24 @@ export function useAuth() {
     }
   }
 
-  async function login(pin: string) {
+  async function listUsers(): Promise<LocalUser[]> {
+    if (!AuthService) return []
+    try {
+      return await AuthService.ListUsers()
+    } catch {
+      return []
+    }
+  }
+
+  async function loginUser(userID: string, pin: string) {
     if (!AuthService) return
     error.value = null
     isLoading.value = true
     try {
-      const user = await AuthService.Login(pin)
+      const user = await AuthService.LoginUser(userID, pin)
       currentUser.value = user
     } catch (err: any) {
-      error.value = err?.message || 'فشل تسجيل الدخول'
+      error.value = parseWailsError(err, 'فشل تسجيل الدخول')
       throw err
     } finally {
       isLoading.value = false
@@ -68,7 +78,8 @@ export function useAuth() {
     error,
     initBindings,
     checkExistingSession,
-    login,
+    listUsers,
+    loginUser,
     logout,
     isAdmin,
   }

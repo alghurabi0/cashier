@@ -14,13 +14,13 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Worker runs in the background and syncs data from the central API to local SQLite.
 type Worker struct {
-	client    *APIClient
-	db        *sqlx.DB
-	mu        sync.Mutex // protects concurrent pull/push operations
-	Status    *SyncStatus
-	triggerCh chan struct{} // SSE-driven immediate re-pull signal
+	client         *APIClient
+	db             *sqlx.DB
+	mu             sync.Mutex
+	Status         *SyncStatus
+	triggerCh      chan struct{}
+	OnMenuPulled   func(imageURLs []string) // called after menu items are synced
 }
 
 // NewWorker creates a new sync worker.
@@ -390,6 +390,15 @@ func (w *Worker) pullMenuItems() error {
 	if since != "" { mode = "delta" }
 	w.Status.Log("pull", "menu_items", "ok", mode, len(items))
 	slog.Debug("sync: pulled menu items", "count", len(items), "delta", since != "")
+
+	if w.OnMenuPulled != nil {
+		urls := make([]string, len(items))
+		for i, item := range items {
+			urls[i] = item.ImagePath
+		}
+		w.OnMenuPulled(urls)
+	}
+
 	return nil
 }
 

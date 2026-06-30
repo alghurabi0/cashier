@@ -2,11 +2,14 @@ package service
 
 import (
 	"coffeeshop-pos/internal/model"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -15,16 +18,14 @@ import (
 
 var imageCache sync.Map
 
-// DataService is a Wails-bound service that exposes local SQLite data
-// to the frontend. All methods are exported and callable from JavaScript.
 type DataService struct {
-	db          *sqlx.DB
-	configStore *ConfigStoreService
+	db            *sqlx.DB
+	configStore   *ConfigStoreService
+	imageCacheDir string
 }
 
-// NewDataService creates a new DataService.
-func NewDataService(db *sqlx.DB, configStore *ConfigStoreService) *DataService {
-	return &DataService{db: db, configStore: configStore}
+func NewDataService(db *sqlx.DB, configStore *ConfigStoreService, imageCacheDir string) *DataService {
+	return &DataService{db: db, configStore: configStore, imageCacheDir: imageCacheDir}
 }
 
 // GetCategories returns all active categories from local SQLite.
@@ -94,9 +95,6 @@ func (s *DataService) GetInventoryItems() ([]model.InventoryItem, error) {
 	return items, nil
 }
 
-// GetImageDataURI fetches an image URL and returns it as a base64 data URI.
-// Results are cached in memory so each URL is fetched only once.
-// If an API URL is configured, routes through the API image proxy for network resilience.
 func (s *DataService) GetImageDataURI(imageURL string) (string, error) {
 	if imageURL == "" {
 		return "", nil
@@ -106,22 +104,36 @@ func (s *DataService) GetImageDataURI(imageURL string) (string, error) {
 		return cached.(string), nil
 	}
 
-	fetchURL := s.toProxyURL(imageURL)
+	// Check disk cache
+	diskPath := s.imageDiskPath(imageURL)
+	if data, err := os.ReadFile(diskPath); err == nil {
+		contentType := http.DetectContentType(data)
+		dataURI := fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(data))
+		imageCache.Store(imageURL, dataURI)
+		return dataURI, nil
+	}
 
+	// Fetch from network
+	fetchURL := s.toProxyURL(imageURL)
 	resp, err := http.Get(fetchURL)
 	if err != nil {
 		slog.Warn("failed to fetch image", "url", fetchURL, "error", err)
-		return "", fmt.Errorf("failed to fetch image: %w", err)
+		return "", nil
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("image fetch returned status %d", resp.StatusCode)
+		return "", nil
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read image body: %w", err)
+		return "", nil
+	}
+
+	// Save to disk
+	if s.imageCacheDir != "" {
+		os.WriteFile(diskPath, body, 0644)
 	}
 
 	contentType := resp.Header.Get("Content-Type")
@@ -131,8 +143,25 @@ func (s *DataService) GetImageDataURI(imageURL string) (string, error) {
 
 	dataURI := fmt.Sprintf("data:%s;base64,%s", contentType, base64.StdEncoding.EncodeToString(body))
 	imageCache.Store(imageURL, dataURI)
-
 	return dataURI, nil
+}
+
+func (s *DataService) imageDiskPath(imageURL string) string {
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(imageURL)))
+	return filepath.Join(s.imageCacheDir, hash)
+}
+
+func (s *DataService) PreCacheImages(imageURLs []string) {
+	go func() {
+		cached := 0
+		for _, url := range imageURLs {
+			if url != "" {
+				s.GetImageDataURI(url)
+				cached++
+			}
+		}
+		slog.Debug("image pre-cache complete", "cached", cached)
+	}()
 }
 
 // toProxyURL converts an R2 public URL to an API proxy URL when possible.

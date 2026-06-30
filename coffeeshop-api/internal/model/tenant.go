@@ -11,12 +11,14 @@ import (
 
 // Tenant represents a customer/coffee shop in the SaaS platform.
 type Tenant struct {
-	ID        uuid.UUID      `db:"id"         json:"id"`
-	Name      string         `db:"name"       json:"name"`
-	Slug      string         `db:"slug"       json:"slug"`
-	IsActive  bool           `db:"is_active"  json:"is_active"`
-	Settings  TenantSettings `db:"settings"   json:"settings"`
-	CreatedAt time.Time      `db:"created_at" json:"created_at"`
+	ID                     uuid.UUID      `db:"id"                        json:"id"`
+	Name                   string         `db:"name"                      json:"name"`
+	Slug                   string         `db:"slug"                      json:"slug"`
+	IsActive               bool           `db:"is_active"                 json:"is_active"`
+	Settings               TenantSettings `db:"settings"                  json:"settings"`
+	ProvisionCode          *string        `db:"provision_code"            json:"provision_code,omitempty"`
+	ProvisionCodeExpiresAt *time.Time     `db:"provision_code_expires_at" json:"provision_code_expires_at,omitempty"`
+	CreatedAt              time.Time      `db:"created_at"                json:"created_at"`
 }
 
 // TenantSettings holds tenant-level configuration (stored as JSONB).
@@ -57,4 +59,17 @@ type CreateTenantResponse struct {
 	Tenant *Tenant `json:"tenant"`
 	Token  string  `json:"token"`
 	User   *User   `json:"user"`
+}
+
+// ProvisionRequest is the body for POST /api/v1/provision.
+type ProvisionRequest struct {
+	Code string `json:"code"`
+}
+
+// ProvisionResponse is returned after successful provisioning.
+type ProvisionResponse struct {
+	Tenant   *Tenant `json:"tenant"`
+	Token    string  `json:"token"`
+	Username string  `json:"username"`
+	Password string  `json:"password"`
 }

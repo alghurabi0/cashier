@@ -63,8 +63,8 @@ function timeAgo(dateStr: string): string {
 
 <style scoped>
 .order-card {
-  background: #1a1a1a;
-  border: 1px solid rgba(255,255,255,0.06);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 14px;
   padding: 14px;
   display: flex;
@@ -74,17 +74,17 @@ function timeAgo(dateStr: string): string {
 }
 
 .order-card.pending {
-  border-right: 3px solid #f39c12;
+  border-right: 3px solid var(--color-warning);
   animation: pulseGlow 2.5s infinite;
 }
 
 .order-card.accepted {
-  border-right: 3px solid #27ae60;
+  border-right: 3px solid var(--color-success);
 }
 
 .order-card.completed {
   opacity: 0.55;
-  border-right: 3px solid #444;
+  border-right: 3px solid var(--color-text-dim);
 }
 
 @keyframes pulseGlow {
@@ -101,24 +101,24 @@ function timeAgo(dateStr: string): string {
 .order-num {
   font-size: 1.05rem;
   font-weight: 900;
-  color: #c9a84c;
+  color: var(--color-accent);
   letter-spacing: 1px;
 }
 
 .table-badge {
-  background: rgba(201,168,76,0.1);
-  border: 1px solid rgba(201,168,76,0.2);
+  background: var(--color-border-light);
+  border: 1px solid var(--color-border-light);
   padding: 3px 10px;
   border-radius: 50px;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #c9a84c;
+  color: var(--color-accent);
 }
 
 .order-time {
   margin-right: auto;
   font-size: 0.68rem;
-  color: #555;
+  color: var(--color-text-dim);
 }
 
 .card-items {
@@ -126,8 +126,8 @@ function timeAgo(dateStr: string): string {
   flex-direction: column;
   gap: 4px;
   padding: 10px 0;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .item-row {
@@ -138,18 +138,18 @@ function timeAgo(dateStr: string): string {
 }
 
 .item-qty {
-  color: #c9a84c;
+  color: var(--color-accent);
   font-weight: 800;
   min-width: 28px;
 }
 
 .item-name {
   flex: 1;
-  color: #f0e6d3;
+  color: var(--color-text);
 }
 
 .item-price {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.75rem;
 }
 
@@ -167,13 +167,13 @@ function timeAgo(dateStr: string): string {
 
 .total-label {
   font-size: 0.65rem;
-  color: #555;
+  color: var(--color-text-dim);
 }
 
 .total-amount {
   font-size: 1.05rem;
   font-weight: 900;
-  color: #f0e6d3;
+  color: var(--color-text);
 }
 
 .total-amount small {
@@ -199,22 +199,22 @@ function timeAgo(dateStr: string): string {
 }
 
 .accept-btn {
-  background: #27ae60;
+  background: var(--color-success);
   color: #fff;
 }
 .accept-btn:hover { filter: brightness(1.15); }
 
 .reject-btn {
   background: rgba(231,76,60,0.12);
-  color: #e74c3c;
+  color: var(--color-danger);
   border: 1px solid rgba(231,76,60,0.25);
 }
 .reject-btn:hover { background: rgba(231,76,60,0.2); }
 
 .complete-btn {
-  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
   color: #0d0d0d;
-  box-shadow: 0 4px 14px rgba(201,168,76,0.3);
+  box-shadow: 0 4px 14px var(--color-accent-glow);
 }
 .complete-btn:hover { filter: brightness(1.1); }
 </style>

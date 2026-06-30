@@ -24,7 +24,7 @@ func main() {
 	cfg := config.Load()
 
 	// Setup logging
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
 	slog.SetDefault(logger)
 
 	// Initialize SQLite
@@ -54,7 +54,10 @@ func main() {
 	configStore.TryAutoLogin()
 
 	// Create services
-	dataService := service.NewDataService(db, configStore)
+	versionService := service.NewVersionService()
+	updateService := service.NewUpdateService(configStore)
+	dataService := service.NewDataService(db, configStore, cfg.ImageCacheDir)
+	syncWorker.OnMenuPulled = dataService.PreCacheImages
 	orderService := service.NewOrderService(db, configStore)
 	receiptService := service.NewReceiptService("المقهى")
 	authService := service.NewAuthService(db)
@@ -93,8 +96,8 @@ func main() {
 
 	// Create Wails application
 	app := application.New(application.Options{
-		Name:        "Coffeeshop POS",
-		Description: "نقطة البيع - المقهى",
+		Name:        "Cashier POS",
+		Description: "نقطة البيع - كاشير",
 		Services: []application.Service{
 			application.NewService(dataService),
 			application.NewService(orderService),
@@ -105,6 +108,8 @@ func main() {
 			application.NewService(reportService),
 			application.NewService(configStore),
 			application.NewService(syncService),
+			application.NewService(versionService),
+			application.NewService(updateService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -116,7 +121,7 @@ func main() {
 
 	// Create main window
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:  "Coffeeshop POS",
+		Title:  "Cashier POS",
 		Width:  1280,
 		Height: 800,
 		Mac: application.MacWindow{

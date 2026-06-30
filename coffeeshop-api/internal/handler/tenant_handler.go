@@ -4,6 +4,7 @@ import (
 	"coffeeshop-api/internal/middleware"
 	"coffeeshop-api/internal/model"
 	"coffeeshop-api/internal/service"
+	"log/slog"
 	"net/http"
 )
 
@@ -77,4 +78,23 @@ func (h *TenantHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	JSON(w, http.StatusOK, settings)
+}
+
+// Provision handles POST /api/v1/provision (unauthenticated).
+// Accepts a provisioning code, returns tenant config + auto-generated credentials.
+func (h *TenantHandler) Provision(w http.ResponseWriter, r *http.Request) {
+	var req model.ProvisionRequest
+	if !DecodeJSON(w, r, &req) {
+		return
+	}
+
+	result, err := h.tenantService.Provision(req.Code)
+	if err != nil {
+		slog.Warn("provision failed", "error", err)
+		Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	slog.Info("tenant provisioned", "tenant", result.Tenant.Slug, "username", result.Username)
+	JSON(w, http.StatusOK, result)
 }

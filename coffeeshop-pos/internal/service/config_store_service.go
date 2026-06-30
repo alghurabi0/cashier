@@ -89,16 +89,7 @@ func (s *ConfigStoreService) SetupAPIConnection(apiURL, username, password strin
 
 	// Store tenant info from login response
 	if loginResp != nil {
-		s.Set("tenant_id", loginResp.Tenant.ID)
-		s.Set("tenant_name", loginResp.Tenant.Name)
-		s.Set("tenant_slug", loginResp.Tenant.Slug)
-
-		// Sync tenant settings to local config
-		if loginResp.Tenant.Settings.KitchenModeEnabled {
-			s.Set("kitchen_mode_enabled", "true")
-		} else {
-			s.Set("kitchen_mode_enabled", "false")
-		}
+		s.syncTenantSettings(loginResp)
 	}
 
 	// Set device ID on the client if we have one stored
@@ -125,14 +116,8 @@ func (s *ConfigStoreService) TryAutoLogin() bool {
 		return false
 	}
 
-	// Update tenant settings on each login
 	if loginResp != nil {
-		s.Set("tenant_id", loginResp.Tenant.ID)
-		if loginResp.Tenant.Settings.KitchenModeEnabled {
-			s.Set("kitchen_mode_enabled", "true")
-		} else {
-			s.Set("kitchen_mode_enabled", "false")
-		}
+		s.syncTenantSettings(loginResp)
 	}
 
 	// Set device ID on the client
@@ -181,4 +166,66 @@ func (s *ConfigStoreService) SetKitchenModeEnabled(enabled bool) error {
 		val = "true"
 	}
 	return s.Set("kitchen_mode_enabled", val)
+}
+
+// ProvisionWithCode provisions this POS using a setup code.
+// Calls the provision endpoint, stores all returned config, and logs in.
+func (s *ConfigStoreService) ProvisionWithCode(apiURL, code string) error {
+	if apiURL == "" || code == "" {
+		return fmt.Errorf("رابط الخادم ورمز الإعداد مطلوبان")
+	}
+
+	s.apiClient.SetBaseURL(apiURL)
+	result, err := s.apiClient.Provision(code)
+	if err != nil {
+		return fmt.Errorf("فشل التفعيل: %w", err)
+	}
+
+	// Store credentials
+	s.Set("api_url", apiURL)
+	s.Set("api_username", result.Username)
+	s.Set("api_password", result.Password)
+
+	// Store tenant info
+	s.Set("tenant_id", result.Tenant.ID)
+	s.Set("tenant_name", result.Tenant.Name)
+	s.Set("tenant_slug", result.Tenant.Slug)
+
+	// Store settings
+	if result.Tenant.Settings.KitchenModeEnabled {
+		s.Set("kitchen_mode_enabled", "true")
+	} else {
+		s.Set("kitchen_mode_enabled", "false")
+	}
+	if result.Tenant.Settings.MenuURL != "" {
+		s.Set("menu_url", result.Tenant.Settings.MenuURL)
+	}
+	if result.Tenant.Settings.IntroVideoURL != "" {
+		s.Set("intro_video_url", result.Tenant.Settings.IntroVideoURL)
+	}
+
+	if deviceID := s.Get("device_id"); deviceID != "" {
+		s.apiClient.SetDeviceID(deviceID)
+	}
+
+	slog.Info("POS provisioned", "tenant", result.Tenant.Slug, "url", apiURL)
+	return nil
+}
+
+// syncTenantSettings stores tenant info from a login response.
+func (s *ConfigStoreService) syncTenantSettings(resp *posSync.LoginResponse) {
+	s.Set("tenant_id", resp.Tenant.ID)
+	s.Set("tenant_name", resp.Tenant.Name)
+	s.Set("tenant_slug", resp.Tenant.Slug)
+	if resp.Tenant.Settings.KitchenModeEnabled {
+		s.Set("kitchen_mode_enabled", "true")
+	} else {
+		s.Set("kitchen_mode_enabled", "false")
+	}
+	if resp.Tenant.Settings.MenuURL != "" {
+		s.Set("menu_url", resp.Tenant.Settings.MenuURL)
+	}
+	if resp.Tenant.Settings.IntroVideoURL != "" {
+		s.Set("intro_video_url", resp.Tenant.Settings.IntroVideoURL)
+	}
 }

@@ -11,12 +11,13 @@ import (
 
 // AdminHandler handles platform-level admin endpoints (super_admin only).
 type AdminHandler struct {
-	adminService *service.AdminService
+	adminService  *service.AdminService
+	tenantService *service.TenantService
 }
 
 // NewAdminHandler creates a new AdminHandler.
-func NewAdminHandler(adminService *service.AdminService) *AdminHandler {
-	return &AdminHandler{adminService: adminService}
+func NewAdminHandler(adminService *service.AdminService, tenantService *service.TenantService) *AdminHandler {
+	return &AdminHandler{adminService: adminService, tenantService: tenantService}
 }
 
 // ListTenants handles GET /api/v1/admin/tenants.
@@ -117,6 +118,26 @@ func (h *AdminHandler) ListTenantDevices(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	JSON(w, http.StatusOK, devices)
+}
+
+// GenerateProvisionCode handles POST /api/v1/admin/tenants/{id}/provision-code.
+func (h *AdminHandler) GenerateProvisionCode(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		Error(w, http.StatusBadRequest, "invalid tenant ID")
+		return
+	}
+
+	code, expiresAt, err := h.tenantService.GenerateProvisionCode(id)
+	if err != nil {
+		Error(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	JSON(w, http.StatusOK, map[string]any{
+		"code":       code,
+		"expires_at": expiresAt,
+	})
 }
 
 // GetStats handles GET /api/v1/admin/stats.

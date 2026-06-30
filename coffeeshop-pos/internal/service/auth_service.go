@@ -64,6 +64,7 @@ func (s *AuthService) SeedDefaultAdmin() {
 }
 
 // Login verifies the PIN and sets the current user session.
+// Deprecated: use LoginUser for user-specific PIN validation.
 func (s *AuthService) Login(pin string) (*LocalUser, error) {
 	if pin == "" {
 		return nil, fmt.Errorf("PIN is required")
@@ -86,6 +87,29 @@ func (s *AuthService) Login(pin string) (*LocalUser, error) {
 	}
 
 	return nil, fmt.Errorf("رمز PIN غير صحيح")
+}
+
+// LoginUser validates the PIN for a specific user and sets the session.
+func (s *AuthService) LoginUser(userID, pin string) (*LocalUser, error) {
+	if userID == "" || pin == "" {
+		return nil, fmt.Errorf("user ID and PIN are required")
+	}
+
+	var u localUserRow
+	err := s.db.Get(&u, `SELECT id, name_ar, pin_hash, role FROM local_users WHERE id = ?`, userID)
+	if err != nil {
+		return nil, fmt.Errorf("المستخدم غير موجود")
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(u.PinHash), []byte(pin)) != nil {
+		return nil, fmt.Errorf("رمز PIN غير صحيح")
+	}
+
+	s.mu.Lock()
+	s.currentUser = &LocalUser{ID: u.ID, NameAr: u.NameAr, Role: u.Role}
+	s.mu.Unlock()
+	slog.Info("auth: user logged in", "name", u.NameAr, "role", u.Role)
+	return s.currentUser, nil
 }
 
 // GetCurrentUser returns the currently logged-in user, or nil.
@@ -123,8 +147,8 @@ func (s *AuthService) CreateUser(nameAr, pin, role string) (*LocalUser, error) {
 	if role != "admin" && role != "cashier" && role != "kitchen" && role != "dev" {
 		return nil, fmt.Errorf("role must be 'admin', 'cashier', 'kitchen', or 'dev'")
 	}
-	if len(pin) < 4 {
-		return nil, fmt.Errorf("PIN must be at least 4 digits")
+	if len(pin) != 4 {
+		return nil, fmt.Errorf("رمز PIN يجب أن يكون ٤ أرقام")
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(pin), bcrypt.DefaultCost)
@@ -187,8 +211,8 @@ func (s *AuthService) ChangePin(userID, newPin string) error {
 	if err := s.requireAdmin(); err != nil {
 		return err
 	}
-	if len(newPin) < 4 {
-		return fmt.Errorf("PIN must be at least 4 digits")
+	if len(newPin) != 4 {
+		return fmt.Errorf("رمز PIN يجب أن يكون ٤ أرقام")
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPin), bcrypt.DefaultCost)

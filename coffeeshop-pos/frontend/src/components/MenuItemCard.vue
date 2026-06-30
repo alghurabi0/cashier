@@ -47,8 +47,8 @@ onMounted(async () => {
   flex-direction: column;
   justify-content: flex-end;
   padding: 14px;
-  background: #1a1a1a;
-  border: 1px solid rgba(255,255,255,0.06);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
   cursor: pointer;
   min-height: 130px;
@@ -63,13 +63,13 @@ onMounted(async () => {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 60%);
+  background: linear-gradient(135deg, var(--color-border-light) 0%, transparent 60%);
   opacity: 0;
   transition: opacity 0.2s;
 }
 
 .item-card:hover {
-  border-color: rgba(201,168,76,0.4);
+  border-color: var(--color-accent-glow);
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
@@ -107,14 +107,14 @@ onMounted(async () => {
 .item-name {
   font-size: 0.92rem;
   font-weight: 700;
-  color: #f0e6d3;
+  color: var(--color-text);
   line-height: 1.3;
 }
 
 .item-price {
   font-size: 1rem;
   font-weight: 800;
-  color: #c9a84c;
+  color: var(--color-accent);
   line-height: 1;
 }
 
@@ -132,7 +132,7 @@ onMounted(async () => {
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
   color: #0d0d0d;
   display: flex;
   align-items: center;

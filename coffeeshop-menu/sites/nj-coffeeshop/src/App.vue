@@ -3,13 +3,17 @@ import { ref, onMounted } from 'vue'
 import MenuView from './views/MenuView.vue'
 import CartView from './views/CartView.vue'
 import ConfirmationView from './views/ConfirmationView.vue'
+import { useMenu } from './composables/useMenu'
 
-type ViewState = 'splash' | 'menu' | 'cart' | 'confirmation' | 'invalid'
+type ViewState = 'loading' | 'splash' | 'menu' | 'cart' | 'confirmation' | 'invalid'
 
-const currentView = ref<ViewState>('splash')
+const currentView = ref<ViewState>('loading')
 const tableToken = ref('')
 const tableNumber = ref('')
 const videoRef = ref<HTMLVideoElement | null>(null)
+const introVideoUrl = ref('')
+
+const { tenantInfo, loadAll } = useMenu()
 
 const particles = Array.from({ length: 22 }, (_, i) => ({
   id: i,
@@ -21,7 +25,11 @@ const particles = Array.from({ length: 22 }, (_, i) => ({
   type: i % 3 === 0 ? '🍫' : '🫘',
 }))
 
-onMounted(() => {
+function skipToMenu() {
+  if (currentView.value === 'splash' || currentView.value === 'loading') currentView.value = 'menu'
+}
+
+onMounted(async () => {
   const params = new URLSearchParams(window.location.search)
   const token = params.get('token')
   if (!token) {
@@ -30,9 +38,20 @@ onMounted(() => {
   }
   tableToken.value = token
   tableNumber.value = '—'
-  setTimeout(() => {
-    if (videoRef.value) videoRef.value.playbackRate = 0.8
-  }, 100)
+
+  await loadAll(token)
+
+  if (tenantInfo.value?.intro_video_url) {
+    introVideoUrl.value = tenantInfo.value.intro_video_url
+    currentView.value = 'splash'
+    setTimeout(() => {
+      if (videoRef.value) videoRef.value.playbackRate = 0.8
+    }, 100)
+  } else {
+    currentView.value = 'menu'
+  }
+
+  setTimeout(skipToMenu, 5000)
 })
 
 function onVideoEnd() {
@@ -43,7 +62,11 @@ function onVideoEnd() {
 <template>
   <div class="app">
 
-    <div v-if="currentView === 'splash'" class="splash-screen" @click="currentView = 'menu'">
+    <div v-if="currentView === 'loading'" class="loading-view">
+      <span class="loading-spinner">☕</span>
+    </div>
+
+    <div v-else-if="currentView === 'splash'" class="splash-screen" @click="currentView = 'menu'">
       <div class="particles-layer">
         <div
           v-for="p in particles"
@@ -59,7 +82,7 @@ function onVideoEnd() {
       </div>
 
       <video ref="videoRef" class="splash-video" autoplay muted playsinline @ended="onVideoEnd">
-        <source src="/intro.mp4" type="video/mp4" />
+        <source :src="introVideoUrl" type="video/mp4" />
       </video>
       <div class="color-filter"></div>
       <div class="edge-top"></div>
@@ -178,6 +201,19 @@ function onVideoEnd() {
   border-radius: 999px;
   backdrop-filter: blur(8px);
   z-index: 5;
+}
+
+.loading-view {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d0d0d;
+}
+
+.loading-spinner {
+  font-size: 3rem;
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
 .invalid-view {

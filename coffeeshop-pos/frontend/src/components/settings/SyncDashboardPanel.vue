@@ -304,9 +304,9 @@ onUnmounted(() => {
   font-weight: var(--font-weight-semi);
   transition: background 0.3s;
 }
-.conn-banner.online { background: rgba(39, 174, 96, 0.1); color: #27ae60; }
-.conn-banner.offline { background: rgba(231, 76, 60, 0.1); color: #e74c3c; }
-.conn-banner.syncing { background: rgba(243, 156, 18, 0.1); color: #f39c12; }
+.conn-banner.online { background: rgba(39, 174, 96, 0.1); color: var(--color-success); }
+.conn-banner.offline { background: rgba(231, 76, 60, 0.1); color: var(--color-danger); }
+.conn-banner.syncing { background: rgba(243, 156, 18, 0.1); color: var(--color-warning); }
 .conn-banner.unknown { background: var(--color-surface-2); color: var(--color-text-muted); }
 .conn-label { font-size: var(--font-size-md); }
 .conn-time { font-size: var(--font-size-sm); opacity: 0.7; }
@@ -326,8 +326,8 @@ onUnmounted(() => {
   border: 1px solid var(--color-border-light);
   transition: border-color 0.3s;
 }
-.stat-card.danger { border-color: #e74c3c; }
-.stat-card.warn { border-color: #f39c12; }
+.stat-card.danger { border-color: var(--color-danger); }
+.stat-card.warn { border-color: var(--color-warning); }
 .stat-value {
   font-size: 2rem;
   font-weight: var(--font-weight-bold);
@@ -346,10 +346,10 @@ onUnmounted(() => {
 .stat-action {
   margin-top: var(--gap-sm);
   padding: var(--gap-xs) var(--gap-sm);
-  border: 1px solid #e74c3c;
+  border: 1px solid var(--color-danger);
   border-radius: var(--radius-sm);
   background: transparent;
-  color: #e74c3c;
+  color: var(--color-danger);
   font-size: var(--font-size-xs);
   cursor: pointer;
   font-family: var(--font-family);
@@ -397,11 +397,11 @@ onUnmounted(() => {
 .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
 .btn-secondary { background: var(--color-surface-2); color: var(--color-text); border-color: var(--color-border-light); }
 .btn-secondary:hover:not(:disabled) { background: var(--color-surface-3, var(--color-surface-2)); }
-.btn-warn { background: rgba(243, 156, 18, 0.15); color: #f39c12; border-color: #f39c12; }
+.btn-warn { background: rgba(243, 156, 18, 0.15); color: var(--color-warning); border-color: var(--color-warning); }
 .btn-warn:hover:not(:disabled) { background: rgba(243, 156, 18, 0.25); }
-.btn-danger-outline { background: transparent; color: #e74c3c; border-color: #e74c3c; }
+.btn-danger-outline { background: transparent; color: var(--color-danger); border-color: var(--color-danger); }
 .btn-danger-outline:hover:not(:disabled) { background: rgba(231, 76, 60, 0.1); }
-.btn-danger { background: #e74c3c; color: white; }
+.btn-danger { background: var(--color-danger); color: white; }
 
 .action-msg {
   padding: var(--gap-sm) var(--gap-md);
@@ -420,7 +420,7 @@ onUnmounted(() => {
   border: 1px solid rgba(231, 76, 60, 0.3);
   border-radius: var(--radius-sm);
 }
-.confirm-box p { margin: 0 0 var(--gap-sm); font-size: var(--font-size-sm); color: #e74c3c; }
+.confirm-box p { margin: 0 0 var(--gap-sm); font-size: var(--font-size-sm); color: var(--color-danger); }
 .confirm-actions { display: flex; gap: var(--gap-sm); }
 
 /* Activity Log */
@@ -450,8 +450,8 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--color-border-light);
   vertical-align: top;
 }
-.log-table tr.log-error td { color: #e74c3c; }
-.log-table tr.log-skipped td { color: #f39c12; }
+.log-table tr.log-error td { color: var(--color-danger); }
+.log-table tr.log-skipped td { color: var(--color-warning); }
 .log-msg {
   max-width: 250px;
   overflow: hidden;
@@ -488,7 +488,7 @@ onUnmounted(() => {
   background: var(--color-surface-2);
   border-radius: var(--radius-sm);
   padding: var(--gap-sm) var(--gap-md);
-  border-right: 3px solid #e74c3c;
+  border-right: 3px solid var(--color-danger);
 }
 .failed-header {
   display: flex;
@@ -498,11 +498,11 @@ onUnmounted(() => {
 }
 .failed-id { font-family: 'SF Mono', monospace; }
 .failed-total { color: var(--color-accent); }
-.failed-retries { font-size: var(--font-size-xs); color: #e74c3c; margin-inline-start: auto; }
+.failed-retries { font-size: var(--font-size-xs); color: var(--color-danger); margin-inline-start: auto; }
 .failed-time { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-top: 2px; }
 .failed-error {
   font-size: var(--font-size-xs);
-  color: #e74c3c;
+  color: var(--color-danger);
   margin-top: var(--gap-xs);
   background: rgba(231, 76, 60, 0.08);
   padding: var(--gap-xs) var(--gap-sm);

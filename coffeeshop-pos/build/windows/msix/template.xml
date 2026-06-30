@@ -10,24 +10,24 @@
     <Installer
         Path="cashier"
         Arguments=""
-        InstallLocation="C:\Program Files\My Company\My Product">
+        InstallLocation="C:\Program Files\Zawan\Cashier POS">
     </Installer>
     <PackageInformation
-        PackageName="My Product"
-        PackageDisplayName="My Product"
-        PublisherName="CN=My Company"
-        PublisherDisplayName="My Company"
-        Version="0.1.0.0"
-        PackageDescription="A cashier application">
+        PackageName="Cashier POS"
+        PackageDisplayName="Cashier POS"
+        PublisherName="CN=Zawan"
+        PublisherDisplayName="Zawan"
+        Version="1.0.0.0"
+        PackageDescription="نقطة البيع - كاشير">
         <Capabilities>
             <Capability Name="runFullTrust" />
             
         </Capabilities>
         <Applications>
             <Application
-                Id="com.example.cashier"
-                Description="A cashier application"
-                DisplayName="My Product"
+                Id="com.zawan.cashier"
+                Description="نقطة البيع - كاشير"
+                DisplayName="Cashier POS"
                 ExecutableName="cashier"
                 EntryPoint="Windows.FullTrustApplication">
                 
@@ -41,9 +41,9 @@
         </Dependencies>
         <Properties>
             <Framework>false</Framework>
-            <DisplayName>My Product</DisplayName>
-            <PublisherDisplayName>My Company</PublisherDisplayName>
-            <Description>A cashier application</Description>
+            <DisplayName>Cashier POS</DisplayName>
+            <PublisherDisplayName>Zawan</PublisherDisplayName>
+            <Description>نقطة البيع - كاشير</Description>
             <Logo>Assets\AppIcon.png</Logo>
         </Properties>
     </PackageInformation>

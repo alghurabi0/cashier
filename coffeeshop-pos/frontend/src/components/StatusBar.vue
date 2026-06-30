@@ -1,7 +1,18 @@
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
+
 defineProps<{
   lastSyncTime: string
 }>()
+
+const appVersion = ref('...')
+
+onMounted(async () => {
+  try {
+    const vs = await import('../../bindings/coffeeshop-pos/internal/service/versionservice')
+    appVersion.value = await vs.GetVersion()
+  } catch { /* dev mode */ }
+})
 </script>
 
 <template>
@@ -13,7 +24,7 @@ defineProps<{
     </div>
     <div class="status-left">
       <span class="status-item text-muted text-sm">
-        نقطة البيع — المقهى v1.0
+        Cashier POS v{{ appVersion }}
       </span>
     </div>
   </footer>

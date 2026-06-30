@@ -181,11 +181,11 @@ func (s *OrderService) GetAcceptedOrders() ([]model.OrderWithItems, error) {
 
 	var orders []model.Order
 	err := s.db.Select(&orders,
-		`SELECT ` + orderSelectCols + `
+		`SELECT `+orderSelectCols+`
 		 FROM orders
-		 WHERE status = 'accepted' AND created_at LIKE ?
-		 ORDER BY created_at ASC`,
-		today+"%",
+		 WHERE status = 'accepted' AND date(created_at) = ?
+		 ORDER BY datetime(created_at) ASC`,
+		today,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch accepted orders: %w", err)
@@ -215,11 +215,11 @@ func (s *OrderService) GetTodayOrders() ([]model.OrderWithItems, error) {
 
 	var orders []model.Order
 	err := s.db.Select(&orders,
-		`SELECT ` + orderSelectCols + `
+		`SELECT `+orderSelectCols+`
 		 FROM orders
-		 WHERE created_at LIKE ?
-		 ORDER BY created_at DESC`,
-		today+"%",
+		 WHERE date(created_at) = ?
+		 ORDER BY datetime(created_at) DESC`,
+		today,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch today's orders: %w", err)
@@ -303,10 +303,11 @@ func (s *OrderService) GetOrdersByDateRange(from, to string) ([]model.OrderWithI
 
 	var orders []model.Order
 	err := s.db.Select(&orders,
-		`SELECT ` + orderSelectCols + `
+		`SELECT `+orderSelectCols+`
 		 FROM orders
-		 WHERE created_at >= ? AND created_at < date(?, '+1 day')
-		 ORDER BY created_at DESC`,
+		 WHERE datetime(created_at) >= datetime(?)
+		   AND datetime(created_at) < datetime(?, '+1 day')
+		 ORDER BY datetime(created_at) DESC`,
 		from, to,
 	)
 	if err != nil {

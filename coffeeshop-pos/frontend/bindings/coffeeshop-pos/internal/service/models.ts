@@ -233,6 +233,39 @@ export class TopSellingItem {
     }
 }
 
+export class UpdateInfo {
+    "available": boolean;
+    "version": string;
+    "release_notes": string;
+    "download_url": string;
+
+    /** Creates a new UpdateInfo instance. */
+    constructor($$source: Partial<UpdateInfo> = {}) {
+        if (!("available" in $$source)) {
+            this["available"] = false;
+        }
+        if (!("version" in $$source)) {
+            this["version"] = "";
+        }
+        if (!("release_notes" in $$source)) {
+            this["release_notes"] = "";
+        }
+        if (!("download_url" in $$source)) {
+            this["download_url"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new UpdateInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): UpdateInfo {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new UpdateInfo($$parsedSource as Partial<UpdateInfo>);
+    }
+}
+
 // Private type creation functions
 const $$createType0 = TopSellingItem.createFrom;
 const $$createType1 = $Create.Array($$createType0);

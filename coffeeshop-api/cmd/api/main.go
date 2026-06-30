@@ -59,6 +59,9 @@ func main() {
 	// Admin repository (cross-tenant queries)
 	adminRepo := repository.NewAdminRepository(db)
 
+	// App release repository
+	appReleaseRepo := repository.NewAppReleaseRepository(db)
+
 	// Wire dependencies: services
 	authService := service.NewAuthService(userRepo, tenantRepo, cfg.JWTSecret)
 	tenantService := service.NewTenantService(tenantRepo, userRepo, authService)
@@ -90,11 +93,14 @@ func main() {
 	deviceHandler := handler.NewDeviceHandler(deviceRepo)
 
 	// Admin handler (platform-level, super_admin only)
-	adminHandler := handler.NewAdminHandler(adminService)
+	adminHandler := handler.NewAdminHandler(adminService, tenantService)
 
 	// Public menu service + handler (no auth, token-scoped)
 	publicMenuService := service.NewPublicMenuService(tableRepo, tenantRepo, categoryRepo, menuItemRepo)
 	publicMenuHandler := handler.NewPublicMenuHandler(publicMenuService)
+
+	// App version handler (unauthenticated, for POS auto-update checks)
+	appVersionHandler := handler.NewAppVersionHandler(appReleaseRepo)
 
 	// R2 storage (nil if not configured)
 	r2, err := storage.NewR2Storage()
@@ -122,11 +128,17 @@ func main() {
 	mux.HandleFunc("POST /api/v1/tenants", tenantHandler.Create)
 	mux.HandleFunc("GET /api/v1/tenants/{slug}", tenantHandler.GetBySlug)
 
+	// POS provisioning (unauthenticated — uses one-time provision code)
+	mux.HandleFunc("POST /api/v1/provision", tenantHandler.Provision)
+
 	// Web orders (table-token auth via query param)
 	mux.HandleFunc("POST /api/v1/web-orders", webOrderHandler.Create)
 
 	// Public menu data (table-token scoped, no auth)
 	mux.HandleFunc("GET /api/v1/public/menu", publicMenuHandler.GetMenu)
+
+	// App version check (no auth — needed before login)
+	mux.HandleFunc("GET /api/v1/app/latest-version", appVersionHandler.LatestVersion)
 
 	// ─── Protected routes (JWT auth — all tenant-scoped) ───
 
@@ -195,7 +207,10 @@ func main() {
 	mux.HandleFunc("GET /api/v1/admin/tenants/{id}/users", adminMw(adminHandler.ListTenantUsers))
 	mux.HandleFunc("POST /api/v1/admin/tenants/{id}/users", adminMw(adminHandler.CreateTenantUser))
 	mux.HandleFunc("GET /api/v1/admin/tenants/{id}/devices", adminMw(adminHandler.ListTenantDevices))
+	mux.HandleFunc("POST /api/v1/admin/tenants/{id}/provision-code", adminMw(adminHandler.GenerateProvisionCode))
 	mux.HandleFunc("GET /api/v1/admin/stats", adminMw(adminHandler.GetStats))
+	mux.HandleFunc("GET /api/v1/admin/app-release", adminMw(appVersionHandler.GetRelease))
+	mux.HandleFunc("PUT /api/v1/admin/app-release", adminMw(appVersionHandler.UpdateRelease))
 
 	// Apply global middleware
 	finalHandler := middleware.Chain(mux,

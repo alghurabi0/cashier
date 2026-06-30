@@ -66,7 +66,7 @@ onMounted(async () => {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  background: #0e0e0e;
+  background: var(--color-bg);
 }
 
 .inv-header {
@@ -74,8 +74,8 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  background: #111;
-  border-bottom: 1px solid rgba(201,168,76,0.12);
+  background: var(--color-cart-bg);
+  border-bottom: 1px solid var(--color-border-light);
   flex-shrink: 0;
 }
 
@@ -90,12 +90,12 @@ onMounted(async () => {
 .header-title {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #f0e6d3;
+  color: var(--color-text);
 }
 
 .header-sub {
   font-size: 0.7rem;
-  color: #555;
+  color: var(--color-text-dim);
   margin-top: 2px;
 }
 
@@ -103,7 +103,7 @@ onMounted(async () => {
   display: flex;
   gap: 6px;
   padding: 12px 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
   overflow-x: auto;
   scrollbar-width: none;
@@ -116,10 +116,10 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   padding: 7px 16px;
-  border: 1px solid rgba(201,168,76,0.15);
+  border: 1px solid var(--color-border-light);
   border-radius: 999px;
-  background: #1a1a1a;
-  color: #666;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   font-family: inherit;
   font-size: 0.82rem;
   font-weight: 700;
@@ -129,15 +129,15 @@ onMounted(async () => {
 }
 
 .inv-tab:hover {
-  border-color: rgba(201,168,76,0.35);
-  color: #c9a84c;
+  border-color: var(--color-accent-glow);
+  color: var(--color-accent);
 }
 
 .inv-tab.active {
-  background: linear-gradient(135deg, #c9a84c, #e6c56a);
-  border-color: #c9a84c;
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
+  border-color: var(--color-accent);
   color: #0d0d0d;
-  box-shadow: 0 3px 14px rgba(201,168,76,0.3);
+  box-shadow: var(--shadow-glow);
 }
 
 .inv-content {

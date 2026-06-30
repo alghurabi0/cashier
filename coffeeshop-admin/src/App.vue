@@ -18,6 +18,7 @@ const navItems = [
   { path: '/', label: 'الرئيسية', icon: '📊' },
   { path: '/tenants', label: 'المستأجرون', icon: '🏪' },
   { path: '/tenants/new', label: 'مستأجر جديد', icon: '➕' },
+  { path: '/app-release', label: 'تحديث التطبيق', icon: '🔄' },
 ]
 </script>
 

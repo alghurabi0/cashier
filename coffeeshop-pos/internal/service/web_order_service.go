@@ -22,6 +22,9 @@ type WebOrderService struct {
 	mu          gosync.RWMutex
 	fetched     bool
 
+	lastFetchAttempt time.Time
+	fetchBackoff     time.Duration
+
 	// In-memory queues for web orders by status
 	pendingOrders   []model.OrderWithItems
 	acceptedOrders  []model.OrderWithItems
@@ -93,17 +96,29 @@ func (s *WebOrderService) GetCompletedOrders() []model.OrderWithItems {
 }
 
 // ensureFetched guarantees that we've pulled the current web orders from the API at least once.
+// Uses exponential backoff (5s → 60s) to avoid spamming when the API is offline.
 func (s *WebOrderService) ensureFetched() {
 	s.mu.Lock()
-	alreadyFetched := s.fetched
-	s.mu.Unlock()
-
-	if alreadyFetched {
+	if s.fetched {
+		s.mu.Unlock()
 		return
 	}
+	if s.fetchBackoff > 0 && time.Since(s.lastFetchAttempt) < s.fetchBackoff {
+		s.mu.Unlock()
+		return
+	}
+	s.mu.Unlock()
 
 	if err := s.FetchPendingFromAPI(); err != nil {
-		slog.Warn("web-orders: failed to fetch initial pending orders from API", "error", err)
+		s.mu.Lock()
+		s.lastFetchAttempt = time.Now()
+		if s.fetchBackoff == 0 {
+			s.fetchBackoff = 5 * time.Second
+		} else if s.fetchBackoff < 60*time.Second {
+			s.fetchBackoff *= 2
+		}
+		s.mu.Unlock()
+		slog.Warn("web-orders: API fetch failed, backing off", "backoff", s.fetchBackoff, "error", err)
 	}
 }
 
@@ -139,6 +154,8 @@ func (s *WebOrderService) FetchPendingFromAPI() error {
 	s.acceptedOrders = accepted
 	s.completedOrders = completed
 	s.fetched = true
+	s.fetchBackoff = 0
+	s.lastFetchAttempt = time.Time{}
 	s.mu.Unlock()
 
 	return nil

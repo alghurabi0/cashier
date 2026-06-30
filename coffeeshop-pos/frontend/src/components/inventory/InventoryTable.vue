@@ -108,11 +108,11 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
   align-items: center;
 }
 
-.section-title { font-size: 1rem; font-weight: 800; color: #f0e6d3; }
+.section-title { font-size: 1rem; font-weight: 800; color: var(--color-text); }
 
 .add-btn {
   padding: 8px 18px;
-  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
   color: #0d0d0d;
   border: none;
   border-radius: 10px;
@@ -131,7 +131,7 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
   align-items: center;
   gap: 12px;
   padding: 60px 0;
-  color: #444;
+  color: var(--color-text-dim);
   font-size: 0.9rem;
 }
 
@@ -140,10 +140,10 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: #1a1a1a;
+  background: var(--color-surface);
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.05);
+  border: 1px solid var(--color-border);
 }
 
 .table th {
@@ -151,24 +151,24 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
   text-align: right;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #555;
-  background: #161616;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: var(--color-text-dim);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .table td {
   padding: 12px 16px;
   text-align: right;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--color-border);
   font-size: 0.88rem;
 }
 
 .table tr:last-child td { border-bottom: none; }
-.table tr:hover td { background: rgba(201,168,76,0.04); }
+.table tr:hover td { background: var(--color-surface-2); }
 
-.name-cell { font-weight: 700; color: #e8dcc8; }
-.muted { color: #666; }
-.gold { color: #c9a84c; font-weight: 700; }
+.name-cell { font-weight: 700; color: var(--color-text); }
+.muted { color: var(--color-text-muted); }
+.gold { color: var(--color-accent); font-weight: 700; }
 .gold small { font-size: 0.65rem; opacity: 0.7; }
 
 .stock-chip {
@@ -182,24 +182,24 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
   font-variant-numeric: tabular-nums;
 }
 
-.stock-chip.ok { background: rgba(39,174,96,0.12); color: #27ae60; }
-.stock-chip.low { background: rgba(243,156,18,0.12); color: #f39c12; }
-.stock-chip.critical { background: rgba(231,76,60,0.12); color: #e74c3c; }
+.stock-chip.ok { background: rgba(39,174,96,0.12); color: var(--color-success); }
+.stock-chip.low { background: rgba(243,156,18,0.12); color: var(--color-warning); }
+.stock-chip.critical { background: rgba(231,76,60,0.12); color: var(--color-danger); }
 
 .actions-cell { display: flex; gap: 4px; }
 
 .icon-btn {
   width: 32px; height: 32px;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: #222;
+  background: var(--color-surface-2);
   cursor: pointer;
   font-size: 0.85rem;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s ease;
 }
 
-.icon-btn:hover { background: #2a2a2a; border-color: rgba(201,168,76,0.3); }
+.icon-btn:hover { background: var(--color-surface-3); border-color: var(--color-accent-glow); }
 .icon-btn.danger:hover { background: rgba(231,76,60,0.12); border-color: rgba(231,76,60,0.3); }
 
 /* Overlay */
@@ -212,7 +212,7 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
 }
 
 .confirm-dialog {
-  background: #161616;
+  background: var(--color-surface);
   border: 1px solid rgba(231,76,60,0.3);
   border-radius: 16px;
   padding: 24px;
@@ -220,20 +220,20 @@ function stockStatus(item: InventoryItem): 'ok' | 'low' | 'critical' {
   display: flex; flex-direction: column; gap: 12px;
 }
 
-.confirm-dialog h3 { font-size: 1rem; font-weight: 800; color: #f0e6d3; }
-.confirm-dialog p { font-size: 0.85rem; color: #666; }
+.confirm-dialog h3 { font-size: 1rem; font-weight: 800; color: var(--color-text); }
+.confirm-dialog p { font-size: 0.85rem; color: var(--color-text-muted); }
 
 .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
 
 .cancel-btn {
-  padding: 8px 16px; border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 8px; background: transparent; color: #666;
+  padding: 8px 16px; border: 1px solid var(--color-border);
+  border-radius: 8px; background: transparent; color: var(--color-text-muted);
   font-family: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer;
 }
 
 .delete-btn {
   padding: 8px 16px; border: none;
-  border-radius: 8px; background: #e74c3c; color: white;
+  border-radius: 8px; background: var(--color-danger); color: white;
   font-family: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer;
 }
 </style>

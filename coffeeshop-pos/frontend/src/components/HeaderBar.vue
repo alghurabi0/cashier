@@ -57,8 +57,8 @@ onUnmounted(() => clearInterval(timer))
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--gap-lg);
-  background: #111;
-  border-bottom: 1px solid rgba(201,168,76,0.15);
+  background: var(--color-cart-bg);
+  border-bottom: 1px solid var(--color-border-light);
   height: 58px;
   flex-shrink: 0;
   position: relative;
@@ -73,7 +73,7 @@ onUnmounted(() => clearInterval(timer))
 
 .logo-icon {
   font-size: 1.5rem;
-  filter: drop-shadow(0 0 6px rgba(201,168,76,0.5));
+  filter: drop-shadow(0 0 6px var(--color-accent-glow));
 }
 
 .logo-texts {
@@ -85,7 +85,7 @@ onUnmounted(() => clearInterval(timer))
 .logo-name {
   font-size: 1rem;
   font-weight: 800;
-  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -94,7 +94,7 @@ onUnmounted(() => clearInterval(timer))
 
 .logo-sub {
   font-size: 0.62rem;
-  color: #555;
+  color: var(--color-text-dim);
   font-weight: 600;
   letter-spacing: 0.03em;
 }
@@ -113,14 +113,14 @@ onUnmounted(() => clearInterval(timer))
 .clock {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #e8dcc8;
+  color: var(--color-text);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
 .date {
   font-size: 0.65rem;
-  color: #555;
+  color: var(--color-text-dim);
   font-weight: 600;
 }
 
@@ -135,9 +135,9 @@ onUnmounted(() => clearInterval(timer))
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(201,168,76,0.12);
-  border: 1px solid rgba(201,168,76,0.3);
-  color: #c9a84c;
+  background: var(--color-accent-glow);
+  border: 1px solid var(--color-accent-glow);
+  color: var(--color-accent);
   font-size: 0.75rem;
   font-weight: 700;
   padding: 4px 10px;
@@ -148,7 +148,7 @@ onUnmounted(() => clearInterval(timer))
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #c9a84c;
+  background: var(--color-accent);
   animation: pulse 1.5s infinite;
 }
 
@@ -160,9 +160,9 @@ onUnmounted(() => clearInterval(timer))
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 600;
-  background: #1a1a1a;
-  color: #555;
-  border: 1px solid rgba(255,255,255,0.05);
+  background: var(--color-surface);
+  color: var(--color-text-dim);
+  border: 1px solid var(--color-border);
 }
 
 .sync-dot {
@@ -171,10 +171,10 @@ onUnmounted(() => clearInterval(timer))
   border-radius: 50%;
 }
 
-.sync-pill.online .sync-dot { background: #27ae60; box-shadow: 0 0 6px rgba(39,174,96,0.5); }
-.sync-pill.online { color: #27ae60; }
-.sync-pill.offline .sync-dot { background: #e74c3c; }
-.sync-pill.offline { color: #e74c3c; }
-.sync-pill.syncing .sync-dot { background: #f39c12; animation: pulse 1s infinite; }
-.sync-pill.syncing { color: #f39c12; }
+.sync-pill.online .sync-dot { background: var(--color-success); box-shadow: 0 0 6px rgba(39,174,96,0.5); }
+.sync-pill.online { color: var(--color-success); }
+.sync-pill.offline .sync-dot { background: var(--color-danger); }
+.sync-pill.offline { color: var(--color-danger); }
+.sync-pill.syncing .sync-dot { background: var(--color-warning); animation: pulse 1s infinite; }
+.sync-pill.syncing { color: var(--color-warning); }
 </style>

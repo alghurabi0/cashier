@@ -64,14 +64,14 @@ const emit = defineEmits<{
   flex-direction: column;
   width: 320px;
   min-width: 320px;
-  background: #111;
-  border-right: 1px solid rgba(201,168,76,0.08);
+  background: var(--color-cart-bg);
+  border-right: 1px solid var(--color-border-light);
   height: 100%;
 }
 
 .cart-header {
   padding: 16px 16px 12px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
+  border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
 }
 
@@ -86,11 +86,11 @@ const emit = defineEmits<{
 .cart-title {
   font-size: 1rem;
   font-weight: 800;
-  color: #e8dcc8;
+  color: var(--color-text);
 }
 
 .cart-badge {
-  background: #c9a84c;
+  background: var(--color-accent);
   color: #0d0d0d;
   font-size: 0.7rem;
   font-weight: 800;
@@ -129,17 +129,17 @@ const emit = defineEmits<{
 .empty-text {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #444;
+  color: var(--color-text-dim);
 }
 
 .empty-hint {
   font-size: 0.72rem;
-  color: #333;
+  color: var(--color-text-dim);
 }
 
 .cart-footer {
   padding: 14px 16px;
-  border-top: 1px solid rgba(201,168,76,0.1);
+  border-top: 1px solid var(--color-border-light);
   flex-shrink: 0;
 }
 
@@ -152,14 +152,14 @@ const emit = defineEmits<{
 
 .total-label {
   font-size: 0.82rem;
-  color: #666;
+  color: var(--color-text-muted);
   font-weight: 600;
 }
 
 .total-value {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #c9a84c;
+  color: var(--color-accent);
   font-variant-numeric: tabular-nums;
 }
 
@@ -174,19 +174,19 @@ const emit = defineEmits<{
   padding: 14px;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #c9a84c, #e6c56a);
+  background: linear-gradient(135deg, var(--color-accent), var(--color-accent-hover));
   color: #0d0d0d;
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.18s ease;
-  box-shadow: 0 4px 16px rgba(201,168,76,0.25);
+  box-shadow: 0 4px 16px var(--color-accent-glow);
 }
 
 .checkout-btn:hover {
   filter: brightness(1.08);
-  box-shadow: 0 6px 24px rgba(201,168,76,0.4);
+  box-shadow: 0 6px 24px var(--color-accent-glow);
 }
 
 .checkout-btn:active { transform: scale(0.98); }

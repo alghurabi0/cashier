@@ -18,7 +18,7 @@ const allNavItems = [
   { id: 'pos', icon: '📋', label: 'نقطة البيع', roles: ['admin', 'cashier', 'dev'] },
   { id: 'web-orders', icon: '🌐', label: 'طلبات الويب', roles: ['admin', 'cashier', 'dev'] },
   { id: 'kitchen', icon: '🍳', label: 'المطبخ', roles: ['admin', 'cashier', 'kitchen', 'dev'] },
-  { id: 'order-history', icon: '📜', label: 'سجل الطلبات', roles: ['admin', 'dev'] },
+  { id: 'order-history', icon: '📜', label: 'سجل الطلبات', roles: ['admin', 'cashier', 'dev'] },
   { id: 'reports', icon: '📊', label: 'التقارير', roles: ['admin', 'dev'] },
   { id: 'inventory', icon: '📦', label: 'المخزون', roles: ['admin', 'dev'] },
   { id: 'settings', icon: '⚙️', label: 'الإعدادات', roles: ['admin', 'dev'] },

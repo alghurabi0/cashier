@@ -66,8 +66,7 @@ function selectLang(l: Lang) {
 }
 
 function openWhatsapp() {
-  const num = import.meta.env.VITE_WHATSAPP
-  if (num) window.open(`https://wa.me/${num}`, '_blank')
+  window.open('https://wa.me/9647801234567', '_blank')
 }
 </script>
 
@@ -133,7 +132,6 @@ function openWhatsapp() {
           v-for="item in visibleItems"
           :key="item.id"
           :item="item"
-          :lang="lang"
           @click="selectedItem = item"
         />
         <button v-if="hasMore" class="show-more-btn" @click="showAll = true">
@@ -190,7 +188,6 @@ function openWhatsapp() {
     <ProductSheet
       :item="selectedItem"
       :tr="tr"
-      :lang="lang"
       @close="selectedItem = null"
       @add="onSheetAdd"
     />
